@@ -74,3 +74,10 @@ model Project {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
+
+// Editable Text
+model SiteSetting {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String
+}
