@@ -1,5 +1,11 @@
 # Shoreline Woodworks Website
 
+## Figma Prototype
+
+- This is the [Figma Prototype](https://www.figma.com/make/ztIH2APn6V2Js8JUqiKMhY/Carpentry-Business-Website?t=nti6zxyZi9QUghD4-20&fullscreen=1).
+- You can generally base the front end work off of. It might change as we go.
+- If you want to view the mobile prototype, open developer tools and toggle on the "Toggle Device Toolbar" (`shift` + `ctrl` + `m`).
+
 ## Prerequisites
 1. Make sure you have [Docker Desktop](https://docs.docker.com/get-started/introduction/get-docker-desktop/) installed (if you haven't installed it already).
 
