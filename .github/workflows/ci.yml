@@ -18,7 +18,7 @@ permissions:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  build:
+  ci:
     if: github.repository == 'NSCC-ITC-Winter2026-WEBD5020-701-MCr/final-project-group3'
     runs-on: ubuntu-latest
 
