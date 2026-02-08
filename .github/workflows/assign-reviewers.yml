@@ -1,0 +1,20 @@
+name: Auto Assign Reviewers
+on:
+  pull_request_target:
+    types: [opened, reopened, ready_for_review]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  run-only-in-upstream:
+    if: github.repository == 'NSCC-ITC-Winter2026-WEBD5020-701-MCr/final-project-group3'
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Running in upstream only"
+
+      - uses: hkusu/review-assign-action@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          assignees: ${{ github.actor }} # Assign PR author
+          reviewers: darrenmartell, sarahpoulin # GitHub usernames of reviewers
