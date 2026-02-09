@@ -8,55 +8,31 @@ export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   return (
-    <nav className="bg-white shadow-md dark:bg-gray-900 dark:shadow-gray-950/50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+    <nav className="bg-card border-b border-border">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <div className="flex items-center shrink-0">
-            <Link
-              href="/"
-              className="text-2xl font-bold text-gray-800 dark:text-white"
-            >
+          <div className="flex shrink-0 items-center">
+            <Link href="/" className="text-2xl font-bold text-foreground">
               Shoreline Woodworks
             </Link>
           </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center flex-1 justify-end space-x-8 pr-4">
-            <Link
-              href="/"
-              className="text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
-            >
-              Home
-            </Link>
-            <Link
-              href="/projects"
-              className="text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
-            >
-              Projects
-            </Link>
-            <Link
-              href="/about"
-              className="text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
-            >
-              About
-            </Link>
-            <Link
-              href="/contact"
-              className="text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
-            >
-              Contact
-            </Link>
+          <div className="hidden md:flex flex-1 items-center justify-end space-x-8 pr-4">
+            <NavLink href="/" label="Home" />
+            <NavLink href="/projects" label="Projects" />
+            <NavLink href="/about" label="About" />
+            <NavLink href="/contact" label="Contact" />
           </div>
 
-          {/* Right side: Theme toggle (left of hamburger on mobile, far right on desktop) */}
-          <div className="flex items-center gap-3 shrink-0">
+          {/* Right side */}
+          <div className="flex shrink-0 items-center gap-3">
             <ThemeToggle />
-            {/* Mobile menu button */}
             <button
               type="button"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="md:hidden p-2 text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white focus:outline-none"
+              className="md:hidden rounded-lg border border-border bg-card p-2 text-foreground transition hover:bg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               aria-label="Toggle menu"
               aria-expanded={isMenuOpen}
             >
@@ -82,39 +58,46 @@ export default function Navbar() {
 
       {/* Mobile Navigation */}
       {isMenuOpen && (
-        <div className="md:hidden border-t border-gray-200 dark:border-gray-700">
-          <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-            <Link
-              href="/"
-              className="block px-3 py-2 text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800 rounded-md"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Home
-            </Link>
-            <Link
-              href="/projects"
-              className="block px-3 py-2 text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800 rounded-md"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Projects
-            </Link>
-            <Link
-              href="/about"
-              className="block px-3 py-2 text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800 rounded-md"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              About
-            </Link>
-            <Link
-              href="/contact"
-              className="block px-3 py-2 text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800 rounded-md"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Contact
-            </Link>
+        <div className="md:hidden border-t border-border bg-card">
+          <div className="space-y-1 px-2 pb-3 pt-2 sm:px-3">
+            <MobileNavLink href="/" label="Home" onClick={() => setIsMenuOpen(false)} />
+            <MobileNavLink href="/projects" label="Projects" onClick={() => setIsMenuOpen(false)} />
+            <MobileNavLink href="/about" label="About" onClick={() => setIsMenuOpen(false)} />
+            <MobileNavLink href="/contact" label="Contact" onClick={() => setIsMenuOpen(false)} />
           </div>
         </div>
       )}
     </nav>
+  );
+}
+
+function NavLink({ href, label }: { href: string; label: string }) {
+  return (
+    <Link
+      href={href}
+      className="text-foreground/80 transition hover:text-foreground"
+    >
+      {label}
+    </Link>
+  );
+}
+
+function MobileNavLink({
+  href,
+  label,
+  onClick,
+}: {
+  href: string;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <Link
+      href={href}
+      onClick={onClick}
+      className="block rounded-lg px-3 py-2 text-foreground/80 transition hover:bg-muted hover:text-foreground"
+    >
+      {label}
+    </Link>
   );
 }
