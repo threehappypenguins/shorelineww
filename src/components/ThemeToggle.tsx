@@ -13,8 +13,14 @@ type ThemeValue = (typeof THEMES)[number]["value"];
 
 export default function ThemeToggle() {
   const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -25,6 +31,15 @@ export default function ThemeToggle() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  if (!mounted) {
+    return (
+      <div
+        className="h-9 w-9 animate-pulse rounded-lg border border-border bg-card"
+        aria-hidden="true"
+      />
+    );
+  }
 
   const currentTheme: ThemeValue = (theme as ThemeValue) ?? "system";
   const CurrentIcon = THEMES.find((t) => t.value === currentTheme)?.icon ?? MonitorIcon;
