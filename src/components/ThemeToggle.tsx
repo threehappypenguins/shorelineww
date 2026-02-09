@@ -17,14 +17,6 @@ export default function ThemeToggle() {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-<<<<<<< feature/modify-style-scheme
-=======
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
->>>>>>> main
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false);
@@ -55,11 +47,7 @@ export default function ThemeToggle() {
         <div
           role="listbox"
           aria-labelledby="theme-toggle-button"
-<<<<<<< feature/modify-style-scheme
           className="absolute right-0 top-full z-50 mt-2 w-40 overflow-hidden rounded-lg border border-border bg-card shadow-lg"
-=======
-          className="absolute right-0 top-full z-50 mt-1 min-w-40 overflow-hidden rounded-lg border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-600 dark:bg-gray-800"
->>>>>>> main
         >
           {THEMES.map(({ value, label, icon: Icon }) => (
             <button
