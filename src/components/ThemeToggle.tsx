@@ -16,6 +16,7 @@ export default function ThemeToggle() {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
 
@@ -69,7 +70,7 @@ export default function ThemeToggle() {
         <div
           role="listbox"
           aria-labelledby="theme-toggle-button"
-          className="absolute right-0 top-full z-50 mt-1 min-w-[10rem] overflow-hidden rounded-lg border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-600 dark:bg-gray-800"
+          className="absolute right-0 top-full z-50 mt-1 min-w-40 overflow-hidden rounded-lg border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-600 dark:bg-gray-800"
         >
           {THEMES.map(({ value, label, icon: Icon }) => (
             <button
