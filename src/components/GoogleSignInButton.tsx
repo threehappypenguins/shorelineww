@@ -21,7 +21,7 @@ export default function GoogleSignInButton() {
     <button
       onClick={handleGoogleSignIn}
       type="button"
-      className="w-full bg-card hover:bg-muted text-foreground font-semibold py-3 px-4 border border-border rounded-lg shadow flex items-center justify-center gap-3 transition-colors"
+      className="w-full bg-primary hover:bg-accent text-foreground font-semibold py-3 px-4 border border-border rounded-lg shadow flex items-center justify-center gap-3 transition-colors"
     >
       <svg className="w-5 h-5" viewBox="0 0 24 24">
         <path
