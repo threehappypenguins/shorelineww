@@ -37,9 +37,9 @@ export default function AdminPage() {
   }
 
   const handleLogout = async () => {
-    await signOut({ 
+    await signOut({
       callbackUrl: '/admin/login',
-      redirect: true 
+      redirect: true
     });
   };
 
@@ -47,7 +47,7 @@ export default function AdminPage() {
     <div className="pt-16">
       <div className="min-h-screen bg-background">
         <div className="max-w-7xl mx-auto py-6 sm:py-8 px-4 sm:px-6 lg:px-8">
-          
+
           {/* Page Header */}
           <div className="mb-8 flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
             <div>
@@ -59,6 +59,7 @@ export default function AdminPage() {
               </p>
             </div>
             <button
+              type="button"
               onClick={handleLogout}
               className="px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:opacity-90 transition-opacity shadow w-full sm:w-auto"
             >
@@ -92,14 +93,14 @@ export default function AdminPage() {
               <nav className="-mb-px flex space-x-8" aria-label="Tabs">
                 {tabs.map((tab) => (
                   <button
+                    type="button"
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
                     className={`
                       whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors
-                      ${
-                        activeTab === tab.id
-                          ? 'border-primary text-primary'
-                          : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
+                      ${activeTab === tab.id
+                        ? 'border-primary text-primary'
+                        : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
                       }
                     `}
                     aria-current={activeTab === tab.id ? 'page' : undefined}
