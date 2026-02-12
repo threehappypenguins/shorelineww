@@ -9,6 +9,8 @@ on:
 
 permissions:
   contents: read
+  pull-requests: write  # Add this - needed to comment on PRs
+  id-token: write       # Add this if using OIDC (recommended)
 
 jobs:
   deploy-preview:
