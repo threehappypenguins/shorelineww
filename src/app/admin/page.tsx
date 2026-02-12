@@ -1,6 +1,6 @@
 'use client';
 
-import { useSession, signOut } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
 import { redirect } from 'next/navigation';
 import { useState } from 'react';
 import ProjectsTab from './components/ProjectsTab';
@@ -36,35 +36,19 @@ export default function AdminPage() {
     redirect('/admin/login');
   }
 
-  const handleLogout = async () => {
-    await signOut({
-      callbackUrl: '/admin/login',
-      redirect: true
-    });
-  };
-
   return (
     <div className="pt-16">
       <div className="min-h-screen bg-background">
         <div className="max-w-7xl mx-auto py-6 sm:py-8 px-4 sm:px-6 lg:px-8">
 
           {/* Page Header */}
-          <div className="mb-8 flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
-            <div>
-              <h1 className="text-3xl sm:text-4xl font-bold mb-2 sm:mb-4 text-foreground">
-                Admin Dashboard
-              </h1>
-              <p className="text-base sm:text-lg text-muted-foreground">
-                Manage your website content and settings
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:opacity-90 transition-opacity shadow w-full sm:w-auto"
-            >
-              Logout
-            </button>
+          <div className="mb-8">
+            <h1 className="text-3xl sm:text-4xl font-bold mb-2 sm:mb-4 text-foreground">
+              Admin Dashboard
+            </h1>
+            <p className="text-base sm:text-lg text-muted-foreground">
+              Manage your website content and settings
+            </p>
           </div>
 
           {/* Tab Navigation */}

@@ -3,6 +3,7 @@ import { Merriweather, Source_Sans_3 } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import LogoutButton from "@/components/LogoutButton";
 import DynamicFavicon from "@/components/DynamicFavicon";
 import { ThemeProvider } from "next-themes";
 import Providers from "@/components/Providers";
@@ -76,6 +77,7 @@ export default function RootLayout({
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
             <DynamicFavicon />
             <Navbar />
+            <LogoutButton />
             <main className="grow">{children}</main>
             <Footer />
           </ThemeProvider>
