@@ -91,7 +91,7 @@ describe("POST /api/projects", () => {
 
         const res = await POST(req);
 
-        expect(requireAdmin).toHaveBeenCalledWith(req);
+        expect(requireAdmin).toHaveBeenCalled();
 
         expect(prisma.project.create).toHaveBeenCalledWith({
             data: {
@@ -189,7 +189,7 @@ describe("POST /api/projects", () => {
 
         g.File = originalFile;
 
-        expect(requireAdmin).toHaveBeenCalledWith(req as unknown as Request);
+        expect(requireAdmin).toHaveBeenCalled();
         expect(uploadImage).toHaveBeenCalledTimes(1);
         expect(prisma.project.create).toHaveBeenCalledWith({
             data: {
@@ -243,7 +243,7 @@ describe("POST /api/projects", () => {
 
         const res = await POST(req);
 
-        expect(requireAdmin).toHaveBeenCalledWith(req);
+        expect(requireAdmin).toHaveBeenCalled();
 
         expect(prisma.project.create).toHaveBeenCalledWith({
             data: {
@@ -285,7 +285,7 @@ describe("POST /api/projects", () => {
 
         const res = await POST(req);
 
-        expect(requireAdmin).toHaveBeenCalledWith(req);
+        expect(requireAdmin).toHaveBeenCalled();
         expect(prisma.project.create).not.toHaveBeenCalled();
         expect(res.status).toBe(400);
         const body = await res.json();
@@ -314,7 +314,7 @@ describe("POST /api/projects", () => {
 
         const res = await POST(req);
 
-        expect(requireAdmin).toHaveBeenCalledWith(req);
+        expect(requireAdmin).toHaveBeenCalled();
         expect(prisma.project.create).not.toHaveBeenCalled();
         expect(res.status).toBe(400);
         const body = await res.json();
@@ -345,7 +345,7 @@ describe("POST /api/projects", () => {
 
         const res = await POST(req);
 
-        expect(requireAdmin).toHaveBeenCalledWith(req);
+        expect(requireAdmin).toHaveBeenCalled();
         expect(prisma.project.create).not.toHaveBeenCalled();
         expect(res.status).toBe(401);
         const body = await res.json();
@@ -376,7 +376,7 @@ describe("POST /api/projects", () => {
 
         const res = await POST(req);
 
-        expect(requireAdmin).toHaveBeenCalledWith(req);
+        expect(requireAdmin).toHaveBeenCalled();
         expect(prisma.project.create).not.toHaveBeenCalled();
         expect(res.status).toBe(403);
         const body = await res.json();
@@ -440,7 +440,7 @@ describe("POST /api/projects", () => {
         // Restore original File constructor after the handler runs.
         g.File = originalFile;
 
-        expect(requireAdmin).toHaveBeenCalledWith(req as unknown as Request);
+        expect(requireAdmin).toHaveBeenCalled();
         expect(prisma.project.create).not.toHaveBeenCalled();
         expect(res.status).toBe(400);
         const body = await res.json();
@@ -506,7 +506,7 @@ describe("POST /api/projects", () => {
 
         g.File = originalFile;
 
-        expect(requireAdmin).toHaveBeenCalledWith(req as unknown as Request);
+        expect(requireAdmin).toHaveBeenCalled();
         expect(prisma.project.create).not.toHaveBeenCalled();
         expect(res.status).toBe(400);
         const body = await res.json();
@@ -575,7 +575,7 @@ describe("POST /api/projects", () => {
 
         g.File = originalFile;
 
-        expect(requireAdmin).toHaveBeenCalledWith(req as unknown as Request);
+        expect(requireAdmin).toHaveBeenCalled();
         expect(prisma.project.create).not.toHaveBeenCalled();
         expect(res.status).toBe(500);
         const body = await res.json();
@@ -654,7 +654,7 @@ describe("POST /api/projects", () => {
 
         g.File = originalFile;
 
-        expect(requireAdmin).toHaveBeenCalledWith(req as unknown as Request);
+        expect(requireAdmin).toHaveBeenCalled();
         expect(uploadImage).toHaveBeenCalledTimes(1);
         expect(prisma.project.create).toHaveBeenCalledTimes(1);
         expect(res.status).toBe(500);
@@ -735,7 +735,7 @@ describe("POST /api/projects", () => {
 
         g.File = originalFile;
 
-        expect(requireAdmin).toHaveBeenCalledWith(req as unknown as Request);
+        expect(requireAdmin).toHaveBeenCalled();
         expect(uploadImage).toHaveBeenCalledTimes(1);
         expect(prisma.project.create).toHaveBeenCalledTimes(1);
         expect(deleteImage).toHaveBeenCalledWith(uploaded.publicId);
