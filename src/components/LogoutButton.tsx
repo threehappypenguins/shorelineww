@@ -19,12 +19,16 @@ export default function LogoutButton() {
   };
 
   return (
-    <button
-      type="button"
-      onClick={handleLogout}
-      className="fixed top-20 right-4 z-40 hidden md:block px-4 py-2 rounded-lg bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity shadow-lg"
-    >
-      Logout
-    </button>
+    <div className="absolute top-20 left-0 right-0 z-40 pointer-events-none">
+      <div className="max-w-7xl mx-auto px-4 flex justify-end pointer-events-auto">
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="hidden md:block px-8 py-2.5 rounded-md bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity shadow-lg min-w-30"
+        >
+          Logout
+        </button>
+      </div>
+    </div>
   );
 }
