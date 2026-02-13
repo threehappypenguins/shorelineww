@@ -9,85 +9,87 @@ on:
 
 permissions:
   contents: read
-  pull-requests: write  # Add this - needed to comment on PRs
-  id-token: write       # Add this if using OIDC (recommended)
 
 jobs:
-  deploy-preview:
-  # Run ONLY in upstream repo AND ONLY for fork PRs
-    if: >
-      github.repository == 'NSCC-ITC-Winter2026-WEBD5020-701-MCr/final-project-group3' &&
-      github.event.pull_request.head.repo.full_name != github.repository &&
-      github.event_name != 'workflow_dispatch'
+  # Note: The "deploy-preview" job is currently disabled to avoid unintended deployments from forked PRs.
+  # To enable it, simply uncomment the entire "deploy-preview" job below. Make sure to test it with a forked PR to ensure it behaves as expected.
+  # The "deploy-production" job is set to run only when manually triggered via workflow_dispatch and only in the upstream repository. This ensures that production deployments are controlled and not triggered by external contributors.
+  
+    # deploy-preview:
+  # # Run ONLY in upstream repo AND ONLY for fork PRs
+  #   if: >
+  #     github.repository == 'NSCC-ITC-Winter2026-WEBD5020-701-MCr/final-project-group3' &&
+  #     github.event.pull_request.head.repo.full_name != github.repository &&
+  #     github.event_name != 'workflow_dispatch'
 
-    runs-on: ubuntu-latest
-    environment: preview  # optional but recommended
+  #   runs-on: ubuntu-latest
+  #   environment: preview  # optional but recommended
 
-    steps:
-      - name: Checkout PR code
-        uses: actions/checkout@v4
-        with:
-          ref: refs/pull/${{ github.event.pull_request.number }}/merge
+  #   steps:
+  #     - name: Checkout PR code
+  #       uses: actions/checkout@v4
+  #       with:
+  #         ref: refs/pull/${{ github.event.pull_request.number }}/merge
 
-      # -----------------------------
-      # pnpm setup
-      # -----------------------------
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10
+  #     # -----------------------------
+  #     # pnpm setup
+  #     # -----------------------------
+  #     - name: Setup pnpm
+  #       uses: pnpm/action-setup@v4
+  #       with:
+  #         version: 10
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'pnpm'
+  #     - name: Setup Node
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: 20
+  #         cache: 'pnpm'
 
-      # -----------------------------
-      # Cache: node_modules + Next.js cache
-      # -----------------------------
-      - name: Cache build artifacts
-        uses: actions/cache@v4
-        with:
-          path: |
-            node_modules
-            .pnpm-store
-            .next/cache
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-
+  #     # -----------------------------
+  #     # Cache: node_modules + Next.js cache
+  #     # -----------------------------
+  #     - name: Cache build artifacts
+  #       uses: actions/cache@v4
+  #       with:
+  #         path: |
+  #           node_modules
+  #           .pnpm-store
+  #           .next/cache
+  #         key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+  #         restore-keys: |
+  #           ${{ runner.os }}-pnpm-
 
-      # Optional: Turborepo cache
-      # - name: Cache Turborepo
-      #   uses: actions/cache@v4
-      #   with:
-      #     path: .turbo
-      #     key: ${{ runner.os }}-turbo-${{ hashFiles('**/*.ts', '**/*.tsx', 'pnpm-lock.yaml') }}
-      #     restore-keys: |
-      #       ${{ runner.os }}-turbo-
+  #     # Optional: Turborepo cache
+  #     # - name: Cache Turborepo
+  #     #   uses: actions/cache@v4
+  #     #   with:
+  #     #     path: .turbo
+  #     #     key: ${{ runner.os }}-turbo-${{ hashFiles('**/*.ts', '**/*.tsx', 'pnpm-lock.yaml') }}
+  #     #     restore-keys: |
+  #     #       ${{ runner.os }}-turbo-
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+  #     - name: Install dependencies
+  #       run: pnpm install --frozen-lockfile
 
-      - name: Install Vercel CLI
-        run: pnpm add -g vercel
+  #     - name: Install Vercel CLI
+  #       run: pnpm add -g vercel
 
-      - name: Link to Vercel Project
-        run: |
-          rm -rf .vercel
-          vercel link --yes \
-            --token=${{ secrets.VERCEL_TOKEN }} \
-            --project=${{ secrets.VERCEL_PROJECT_ID }} \
-            --scope=${{ secrets.VERCEL_ORG_ID }}
+  #     - name: Link to Vercel Project
+  #       run: |
+  #         rm -rf .vercel
+  #         vercel link --yes \
+  #           --token=${{ secrets.VERCEL_TOKEN }} \
+  #           --project=${{ secrets.VERCEL_PROJECT_ID }} \
+  #           --scope=${{ secrets.VERCEL_ORG_ID }}
 
-      - name: Pull Vercel Environment Info
-        run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+  #     - name: Pull Vercel Environment Info
+  #       run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
 
-      - name: Build Project
-        run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
+  #     - name: Build Project
+  #       run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
 
-      - name: Deploy Preview
-        run: vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }} --yes --scope=${{ secrets.VERCEL_SCOPE }}
+  #     - name: Deploy Preview
+  #       run: vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }} --yes --scope=${{ secrets.VERCEL_SCOPE }}
 
 
   deploy-production:
