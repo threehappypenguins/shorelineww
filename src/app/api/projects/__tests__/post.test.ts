@@ -22,6 +22,9 @@ import { requireAdmin } from "@/lib/auth-guards";
 import { uploadImage, deleteImage } from "@/lib/cloudinary";
 import type { ProjectApiResponse } from "@/types/project";
 
+/** Type for globalThis when temporarily replacing the File constructor in tests. */
+type GlobalWithFile = { File?: unknown };
+
 // Mock auth guard used by the POST handler so we can simulate different
 // authorization outcomes (admin, non-admin, unauthenticated) in isolation.
 vi.mock("@/lib/auth-guards", () => ({
@@ -54,7 +57,7 @@ describe("POST /api/projects", () => {
      * the handler must call create with the correct data and return 201 and the created project.
      */
     it("successfully creates a new project with a valid payload and no image", async () => {
-        (requireAdmin as unknown as any).mockResolvedValue({
+        (requireAdmin as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
             ok: true,
             session: {},
             response: null,
@@ -72,7 +75,7 @@ describe("POST /api/projects", () => {
             updatedAt: "2026-02-12T10:00:00.000Z",
         };
 
-        (prisma.project.create as unknown as any).mockResolvedValue(createdProject);
+        (prisma.project.create as ReturnType<typeof vi.fn>).mockResolvedValue(createdProject);
 
         const formData = new FormData();
         // Intentionally include surrounding whitespace to verify trimming
@@ -111,7 +114,7 @@ describe("POST /api/projects", () => {
      * call uploadImage, then create with the returned URL and publicId, and return 201.
      */
     it("successfully creates a new project with a valid jpeg image", async () => {
-        (requireAdmin as unknown as any).mockResolvedValue({
+        (requireAdmin as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
             ok: true,
             session: {},
             response: null,
@@ -125,7 +128,7 @@ describe("POST /api/projects", () => {
             format: "jpg",
         };
 
-        (uploadImage as unknown as any).mockResolvedValue(uploaded);
+        (uploadImage as ReturnType<typeof vi.fn>).mockResolvedValue(uploaded);
 
         const createdProject: ProjectApiResponse = {
             id: "proj_img_1",
@@ -139,7 +142,7 @@ describe("POST /api/projects", () => {
             updatedAt: "2026-02-12T12:00:00.000Z",
         };
 
-        (prisma.project.create as unknown as any).mockResolvedValue(createdProject);
+        (prisma.project.create as ReturnType<typeof vi.fn>).mockResolvedValue(createdProject);
 
         class JpegFakeFile {
             size: number;
@@ -155,8 +158,9 @@ describe("POST /api/projects", () => {
 
         const jpegFile = new JpegFakeFile(1024, "image/jpeg");
 
-        const originalFile = (globalThis as any).File;
-        (globalThis as any).File = JpegFakeFile as any;
+        const g = globalThis as unknown as GlobalWithFile;
+        const originalFile = g.File;
+        g.File = JpegFakeFile;
 
         const fakeFormData = {
             get(key: string) {
@@ -183,7 +187,7 @@ describe("POST /api/projects", () => {
 
         const res = await POST(req);
 
-        (globalThis as any).File = originalFile;
+        g.File = originalFile;
 
         expect(requireAdmin).toHaveBeenCalledWith(req as unknown as Request);
         expect(uploadImage).toHaveBeenCalledTimes(1);
@@ -209,7 +213,7 @@ describe("POST /api/projects", () => {
      * and imagePublicId present (as null).
      */
     it("successfully creates a new project when only title is provided", async () => {
-        (requireAdmin as unknown as any).mockResolvedValue({
+        (requireAdmin as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
             ok: true,
             session: {},
             response: null,
@@ -227,7 +231,7 @@ describe("POST /api/projects", () => {
             updatedAt: "2026-02-12T11:00:00.000Z",
         };
 
-        (prisma.project.create as unknown as any).mockResolvedValue(createdProject);
+        (prisma.project.create as ReturnType<typeof vi.fn>).mockResolvedValue(createdProject);
 
         const formData = new FormData();
         formData.set("title", "Title Only Project");
@@ -264,7 +268,7 @@ describe("POST /api/projects", () => {
      * 400 with a clear error and must not call create.
      */
     it("returns 400 when title is missing", async () => {
-        (requireAdmin as unknown as any).mockResolvedValue({
+        (requireAdmin as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
             ok: true,
             session: {},
             response: null,
@@ -293,7 +297,7 @@ describe("POST /api/projects", () => {
      * title so we do not create projects with empty titles.
      */
     it("returns 400 when title is only whitespace", async () => {
-        (requireAdmin as unknown as any).mockResolvedValue({
+        (requireAdmin as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
             ok: true,
             session: {},
             response: null,
@@ -322,7 +326,7 @@ describe("POST /api/projects", () => {
      * handler must return 401 Unauthorized and must not create a project.
      */
     it("returns 401 when the session is missing or invalid", async () => {
-        (requireAdmin as unknown as any).mockResolvedValue({
+        (requireAdmin as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
             ok: false,
             session: null,
             response: new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -353,7 +357,7 @@ describe("POST /api/projects", () => {
      * Forbidden and must not create a project.
      */
     it("returns 403 when the user is authenticated but not an admin", async () => {
-        (requireAdmin as unknown as any).mockResolvedValue({
+        (requireAdmin as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
             ok: false,
             session: {},
             response: new Response(JSON.stringify({ error: "Forbidden" }), {
@@ -384,7 +388,7 @@ describe("POST /api/projects", () => {
      * must be rejected with 400 and the documented allowed-types error message.
      */
     it("returns 400 when image has an invalid svg mime type", async () => {
-        (requireAdmin as unknown as any).mockResolvedValue({
+        (requireAdmin as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
             ok: true,
             session: {},
             response: null,
@@ -404,8 +408,9 @@ describe("POST /api/projects", () => {
 
         const svgFile = new FakeFile(10, "image/svg+xml");
 
-        const originalFile = (globalThis as any).File;
-        (globalThis as any).File = FakeFile as any;
+        const g = globalThis as unknown as GlobalWithFile;
+        const originalFile = g.File;
+        g.File = FakeFile;
 
         const fakeFormData = {
             get(key: string) {
@@ -433,7 +438,7 @@ describe("POST /api/projects", () => {
         const res = await POST(req);
 
         // Restore original File constructor after the handler runs.
-        (globalThis as any).File = originalFile;
+        g.File = originalFile;
 
         expect(requireAdmin).toHaveBeenCalledWith(req as unknown as Request);
         expect(prisma.project.create).not.toHaveBeenCalled();
@@ -450,7 +455,7 @@ describe("POST /api/projects", () => {
      * avoid uploading oversized files to Cloudinary.
      */
     it("returns 400 when image file is larger than 10MB", async () => {
-        (requireAdmin as unknown as any).mockResolvedValue({
+        (requireAdmin as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
             ok: true,
             session: {},
             response: null,
@@ -470,8 +475,9 @@ describe("POST /api/projects", () => {
 
         const largeFile = new LargeFakeFile(10 * 1024 * 1024 + 1, "image/jpeg");
 
-        const originalFile = (globalThis as any).File;
-        (globalThis as any).File = LargeFakeFile as any;
+        const g = globalThis as unknown as GlobalWithFile;
+        const originalFile = g.File;
+        g.File = LargeFakeFile;
 
         const fakeFormData = {
             get(key: string) {
@@ -498,7 +504,7 @@ describe("POST /api/projects", () => {
 
         const res = await POST(req);
 
-        (globalThis as any).File = originalFile;
+        g.File = originalFile;
 
         expect(requireAdmin).toHaveBeenCalledWith(req as unknown as Request);
         expect(prisma.project.create).not.toHaveBeenCalled();
@@ -514,13 +520,13 @@ describe("POST /api/projects", () => {
      * 500 with a generic message and must not call create (no orphan DB record).
      */
     it("returns 500 when Cloudinary upload fails", async () => {
-        (requireAdmin as unknown as any).mockResolvedValue({
+        (requireAdmin as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
             ok: true,
             session: {},
             response: null,
         });
 
-        (uploadImage as unknown as any).mockRejectedValue(
+        (uploadImage as ReturnType<typeof vi.fn>).mockRejectedValue(
             new Error("Cloudinary upload failed"),
         );
 
@@ -538,8 +544,9 @@ describe("POST /api/projects", () => {
 
         const jpegFile = new FailingUploadFile(1024, "image/jpeg");
 
-        const originalFile = (globalThis as any).File;
-        (globalThis as any).File = FailingUploadFile as any;
+        const g = globalThis as unknown as GlobalWithFile;
+        const originalFile = g.File;
+        g.File = FailingUploadFile;
 
         const fakeFormData = {
             get(key: string) {
@@ -566,7 +573,7 @@ describe("POST /api/projects", () => {
 
         const res = await POST(req);
 
-        (globalThis as any).File = originalFile;
+        g.File = originalFile;
 
         expect(requireAdmin).toHaveBeenCalledWith(req as unknown as Request);
         expect(prisma.project.create).not.toHaveBeenCalled();
@@ -581,7 +588,7 @@ describe("POST /api/projects", () => {
      * in Cloudinary.
      */
     it("returns 500 and cleans up uploaded image when database create fails", async () => {
-        (requireAdmin as unknown as any).mockResolvedValue({
+        (requireAdmin as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
             ok: true,
             session: {},
             response: null,
@@ -595,8 +602,8 @@ describe("POST /api/projects", () => {
             format: "jpg",
         };
 
-        (uploadImage as unknown as any).mockResolvedValue(uploaded);
-        (prisma.project.create as unknown as any).mockRejectedValue(
+        (uploadImage as ReturnType<typeof vi.fn>).mockResolvedValue(uploaded);
+        (prisma.project.create as ReturnType<typeof vi.fn>).mockRejectedValue(
             new Error("Database create failed"),
         );
 
@@ -616,8 +623,9 @@ describe("POST /api/projects", () => {
 
         const jpegFile = new DbFailFile(1024, "image/jpeg");
 
-        const originalFile = (globalThis as any).File;
-        (globalThis as any).File = DbFailFile as any;
+        const g = globalThis as unknown as GlobalWithFile;
+        const originalFile = g.File;
+        g.File = DbFailFile;
 
         const fakeFormData = {
             get(key: string) {
@@ -644,7 +652,7 @@ describe("POST /api/projects", () => {
 
         const res = await POST(req);
 
-        (globalThis as any).File = originalFile;
+        g.File = originalFile;
 
         expect(requireAdmin).toHaveBeenCalledWith(req as unknown as Request);
         expect(uploadImage).toHaveBeenCalledTimes(1);
@@ -653,5 +661,88 @@ describe("POST /api/projects", () => {
         const body = await res.json();
         expect(body).toEqual({ error: "Failed to create project" });
         expect(deleteImageMock).toHaveBeenCalledWith(uploaded.publicId);
+    });
+
+    /**
+     * When create fails after a successful upload and the cleanup deleteImage also
+     * fails, the handler must return 500 with a message indicating both failures.
+     */
+    it("returns 500 with cleanup failure message when create fails and deleteImage cleanup fails", async () => {
+        (requireAdmin as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
+            ok: true,
+            session: {},
+            response: null,
+        });
+
+        const uploaded = {
+            publicId: "projects/img-cleanup-fail",
+            secureUrl: "https://res.cloudinary.com/demo/image/upload/v1/projects/img-cleanup-fail.jpg",
+            width: 800,
+            height: 600,
+            format: "jpg",
+        };
+
+        (uploadImage as ReturnType<typeof vi.fn>).mockResolvedValue(uploaded);
+        (prisma.project.create as ReturnType<typeof vi.fn>).mockRejectedValue(
+            new Error("Database create failed"),
+        );
+        (deleteImage as ReturnType<typeof vi.fn>).mockRejectedValue(
+            new Error("Cloudinary delete failed"),
+        );
+
+        class CleanupFailFile {
+            size: number;
+            type: string;
+            constructor(size: number, type: string) {
+                this.size = size;
+                this.type = type;
+            }
+            async arrayBuffer(): Promise<ArrayBuffer> {
+                return new ArrayBuffer(0);
+            }
+        }
+
+        const jpegFile = new CleanupFailFile(1024, "image/jpeg");
+
+        const g = globalThis as unknown as GlobalWithFile;
+        const originalFile = g.File;
+        g.File = CleanupFailFile;
+
+        const fakeFormData = {
+            get(key: string) {
+                switch (key) {
+                    case "title":
+                        return "Project With Cleanup Failure";
+                    case "description":
+                        return "Create and cleanup should both fail";
+                    case "category":
+                        return "Residential";
+                    case "featured":
+                        return "true";
+                    case "image":
+                        return jpegFile;
+                    default:
+                        return null;
+                }
+            },
+        };
+
+        const req = {
+            formData: async () => fakeFormData,
+        } as unknown as Request;
+
+        const res = await POST(req);
+
+        g.File = originalFile;
+
+        expect(requireAdmin).toHaveBeenCalledWith(req as unknown as Request);
+        expect(uploadImage).toHaveBeenCalledTimes(1);
+        expect(prisma.project.create).toHaveBeenCalledTimes(1);
+        expect(deleteImage).toHaveBeenCalledWith(uploaded.publicId);
+        expect(res.status).toBe(500);
+        const body = await res.json();
+        expect(body).toEqual({
+            error: "Failed to create project; could not cleanup uploaded image",
+        });
     });
 });

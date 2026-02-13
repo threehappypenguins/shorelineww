@@ -39,8 +39,7 @@ export async function GET(_req: Request, { params }: RouteParams) {
     }
 
     return NextResponse.json(project);
-  } catch (error) {
-    //console.error("Failed to fetch project", error);
+  } catch {
     return NextResponse.json(
       { error: "Failed to fetch project" },
       { status: 500 },
@@ -134,8 +133,7 @@ export async function PATCH(req: Request, { params }: RouteParams) {
           // Only clear DB fields if Cloudinary deletion succeeds
           imageUrl = null;
           imagePublicId = null;
-        } catch (error) {
-          //console.error("Failed to delete project image in Cloudinary", error);
+        } catch {
           return NextResponse.json(
             { error: "Failed to delete existing image" },
             { status: 500 },
@@ -173,21 +171,19 @@ export async function PATCH(req: Request, { params }: RouteParams) {
     if (hasNewImage && existing.imagePublicId && existing.imagePublicId !== imagePublicId) {
       try {
         await deleteImage(existing.imagePublicId);
-      } catch (error) {
-        //console.error("Failed to delete old project image in Cloudinary after update", error);
+      } catch {
+        // Best-effort: ignore failure to delete old image from Cloudinary
       }
     }
 
     return NextResponse.json(updated);
-  } catch (error) {
-    //console.error("Failed to update project", error);
-
+  } catch {
     // Best-effort cleanup if a new image was uploaded but the DB update failed.
     if (newUploadedPublicId) {
       try {
         await deleteImage(newUploadedPublicId);
-      } catch (cleanupError) {
-        //console.error("Failed to cleanup newly uploaded image after DB error", cleanupError);
+      } catch {
+        // Ignore cleanup failure
       }
     }
 
@@ -226,8 +222,11 @@ export async function DELETE(req: Request, { params }: RouteParams) {
     if (existing.imagePublicId) {
       try {
         await deleteImage(existing.imagePublicId);
-      } catch (error) {
-        //console.error("Failed to delete project image in Cloudinary", error);
+      } catch {
+        return NextResponse.json(
+          { error: "Failed to delete project image" },
+          { status: 500 },
+        );
       }
     }
 
@@ -236,8 +235,7 @@ export async function DELETE(req: Request, { params }: RouteParams) {
     });
 
     return NextResponse.json({ success: true });
-  } catch (error) {
-    //console.error("Failed to delete project", error);
+  } catch {
     return NextResponse.json(
       { error: "Failed to delete project" },
       { status: 500 },

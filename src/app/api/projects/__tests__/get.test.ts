@@ -46,7 +46,7 @@ describe("GET /api/projects", () => {
      * order by createdAt desc so the response is the full list in the correct order.
      */
     it("should return a list of projects with no filters", async () => {
-        (prisma.project.findMany as any).mockResolvedValue(mockProjects);
+        (prisma.project.findMany as ReturnType<typeof vi.fn>).mockResolvedValue(mockProjects);
 
         const req = new Request("http://localhost/api/projects");
         const res = await GET(req);
@@ -68,7 +68,7 @@ describe("GET /api/projects", () => {
         const residentialProjects = mockProjects.filter(
             (project: ProjectApiResponse) => project.category === "Residential",
         );
-        (prisma.project.findMany as any).mockResolvedValue(residentialProjects);
+        (prisma.project.findMany as ReturnType<typeof vi.fn>).mockResolvedValue(residentialProjects);
 
         const req = new Request("http://localhost/api/projects?category=Residential");
         const res = await GET(req);
@@ -95,7 +95,7 @@ describe("GET /api/projects", () => {
         const featuredProjects = mockProjects.filter(
             (project: ProjectApiResponse) => project.featured,
         );
-        (prisma.project.findMany as any).mockResolvedValue(featuredProjects);
+        (prisma.project.findMany as ReturnType<typeof vi.fn>).mockResolvedValue(featuredProjects);
 
         const req = new Request("http://localhost/api/projects?featured=true");
         const res = await GET(req);
@@ -120,7 +120,7 @@ describe("GET /api/projects", () => {
         const nonFeaturedProjects = mockProjects.filter(
             (project: ProjectApiResponse) => !project.featured,
         );
-        (prisma.project.findMany as any).mockResolvedValue(nonFeaturedProjects);
+        (prisma.project.findMany as ReturnType<typeof vi.fn>).mockResolvedValue(nonFeaturedProjects);
 
         const req = new Request("http://localhost/api/projects?featured=false");
         const res = await GET(req);
@@ -142,7 +142,7 @@ describe("GET /api/projects", () => {
      * 500 with a generic message so we don't leak internal details to the client.
      */
     it("should return a 500 error if the database query fails", async () => {
-        (prisma.project.findMany as any).mockRejectedValue(new Error("Database query failed"));
+        (prisma.project.findMany as ReturnType<typeof vi.fn>).mockRejectedValue(new Error("Database query failed"));
 
         const req = new Request("http://localhost/api/projects");
         const res = await GET(req);
@@ -160,7 +160,7 @@ describe("GET /api/projects", () => {
             (project: ProjectApiResponse) =>
                 project.category === "Residential" && project.featured === true,
         );
-        (prisma.project.findMany as any).mockResolvedValue(featuredResidentialProjects);
+        (prisma.project.findMany as ReturnType<typeof vi.fn>).mockResolvedValue(featuredResidentialProjects);
 
         const req = new Request(
             "http://localhost/api/projects?category=Residential&featured=true",
@@ -186,7 +186,7 @@ describe("GET /api/projects", () => {
      * empty array (not 404 or 500) so clients can distinguish "no results" from errors.
      */
     it("should return an empty array when no projects match the filters", async () => {
-        (prisma.project.findMany as any).mockResolvedValue([]);
+        (prisma.project.findMany as ReturnType<typeof vi.fn>).mockResolvedValue([]);
 
         const req = new Request("http://localhost/api/projects?category=NonExistent");
         const res = await GET(req);
@@ -210,7 +210,7 @@ describe("GET /api/projects", () => {
         const nonFeaturedProjects = mockProjects.filter(
             (project: ProjectApiResponse) => !project.featured,
         );
-        (prisma.project.findMany as any).mockResolvedValue(nonFeaturedProjects);
+        (prisma.project.findMany as ReturnType<typeof vi.fn>).mockResolvedValue(nonFeaturedProjects);
 
         const req = new Request("http://localhost/api/projects?featured=invalid");
         const res = await GET(req);
@@ -230,7 +230,7 @@ describe("GET /api/projects", () => {
      * handler should use an empty where so the full list is returned.
      */
     it("should ignore empty category parameter", async () => {
-        (prisma.project.findMany as any).mockResolvedValue(mockProjects);
+        (prisma.project.findMany as ReturnType<typeof vi.fn>).mockResolvedValue(mockProjects);
 
         const req = new Request("http://localhost/api/projects?category=");
         const res = await GET(req);

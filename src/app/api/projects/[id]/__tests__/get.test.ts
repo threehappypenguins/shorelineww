@@ -44,7 +44,7 @@ describe("GET /api/projects/[id]", () => {
      */
     it("should return the correct project for each existing id", async () => {
         for (const project of mockProjects) {
-            (prisma.project.findUnique as any).mockResolvedValue(project);
+            (prisma.project.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue(project);
 
             const req = new Request(`http://localhost/api/projects/${project.id}`);
             const res = await GET(req, {
@@ -66,7 +66,7 @@ describe("GET /api/projects/[id]", () => {
      * server errors.
      */
     it("should return 404 when the project does not exist", async () => {
-        (prisma.project.findUnique as any).mockResolvedValue(null);
+        (prisma.project.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue(null);
 
         const req = new Request("http://localhost/api/projects/nonexistent");
         const res = await GET(req, {
@@ -87,7 +87,7 @@ describe("GET /api/projects/[id]", () => {
      * details to the client.
      */
     it("should return 500 when the database query fails", async () => {
-        (prisma.project.findUnique as any).mockRejectedValue(
+        (prisma.project.findUnique as ReturnType<typeof vi.fn>).mockRejectedValue(
             new Error("Database connection failed"),
         );
 

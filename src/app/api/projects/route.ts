@@ -45,8 +45,7 @@ export async function GET(req: Request) {
     });
 
     return NextResponse.json(projects);
-  } catch (error) {
-    //console.error("Failed to fetch projects", error);
+  } catch {
     return NextResponse.json(
       { error: "Failed to fetch projects" },
       { status: 500 },
@@ -142,14 +141,16 @@ export async function POST(req: Request) {
 
     // 6. Return created project with 201 status
     return NextResponse.json(project, { status: 201 });
-  } catch (error) {
-    //console.error("Failed to create project", error);
-    // Best-effort cleanup of an image that was uploaded before the DB error occurred.
+  } catch {
+    // Clean up the uploaded image if create failed; surface failure to the client.
     if (uploadedPublicId) {
       try {
         await deleteImage(uploadedPublicId);
-      } catch (cleanupError) {
-        //console.error("Failed to cleanup uploaded image after DB error", cleanupError);
+      } catch {
+        return NextResponse.json(
+          { error: "Failed to create project; could not cleanup uploaded image" },
+          { status: 500 },
+        );
       }
     }
     return NextResponse.json(

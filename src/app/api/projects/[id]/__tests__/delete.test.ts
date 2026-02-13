@@ -13,6 +13,8 @@
  * - Auth: verifyAdmin is called; 401 when session is missing or invalid; 403
  *   when the user is authenticated but not an admin.
  * - Server error: handler returns 500 when the database throws (e.g. delete fails).
+ * - Cloudinary failure: when the project has an image and deleteImage throws, handler
+ *   returns 500 with { error: "Failed to delete project image" } and does not delete from DB.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { DELETE } from "../route";
@@ -213,5 +215,38 @@ describe("DELETE /api/projects/[id]", () => {
         expect(res.status).toBe(500);
         const body = await res.json();
         expect(body).toEqual({ error: "Failed to delete project" });
+    });
+
+    /**
+     * When the project has an image and deleteImage throws (e.g. Cloudinary unreachable),
+     * the handler must return 500 with { error: "Failed to delete project image" } and
+     * must not delete the project from the database, so the client can retry.
+     */
+    it("should return 500 and not delete from DB when Cloudinary deleteImage fails", async () => {
+        (verifyAdmin as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
+            ok: true,
+            user: { isAdmin: true },
+        });
+        const project = mockProjects[0];
+        (prisma.project.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue(project);
+        (deleteImage as ReturnType<typeof vi.fn>).mockRejectedValue(
+            new Error("Cloudinary API error"),
+        );
+
+        const params = Promise.resolve({ id: project.id });
+        const req = new Request(`http://localhost/api/projects/${project.id}`, {
+            method: "DELETE",
+        });
+        const res = await DELETE(req, { params });
+
+        expect(verifyAdmin).toHaveBeenCalledWith(req, { params });
+        expect(prisma.project.findUnique).toHaveBeenCalledWith({
+            where: { id: project.id },
+        });
+        expect(deleteImage).toHaveBeenCalledWith(project.imagePublicId);
+        expect(prisma.project.delete).not.toHaveBeenCalled();
+        expect(res.status).toBe(500);
+        const body = await res.json();
+        expect(body).toEqual({ error: "Failed to delete project image" });
     });
 });
