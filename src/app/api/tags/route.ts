@@ -8,11 +8,13 @@ export const runtime = "nodejs";
  * GET /api/tags
  *
  * - ?q=... : Returns tag names matching the query (ILIKE). Used for tag suggestions. Public.
+ * - ?list=names : Returns all tag names. Public. Used for /projects page filter dropdown.
  * - No query: Returns all tags with project count. Admin-only. Used for tag editor.
  */
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const q = searchParams.get("q");
+  const list = searchParams.get("list");
 
   if (q != null && typeof q === "string" && q.trim()) {
     const query = q.trim();
@@ -21,6 +23,14 @@ export async function GET(req: Request) {
       select: { name: true },
       orderBy: { name: "asc" },
       take: 20,
+    });
+    return NextResponse.json(tags.map((t) => t.name));
+  }
+
+  if (list === "names") {
+    const tags = await prisma.tag.findMany({
+      select: { name: true },
+      orderBy: { name: "asc" },
     });
     return NextResponse.json(tags.map((t) => t.name));
   }

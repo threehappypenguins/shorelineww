@@ -40,6 +40,11 @@ const projectTagsInclude = {
     projectTags: { include: { tag: { select: { name: true } } } },
 };
 
+const defaultOrderBy = [
+    { displayOrder: "asc" as const },
+    { createdAt: "desc" as const },
+];
+
 function withProjectTags(projects: typeof mockProjects) {
     return projects.map((p) => ({
         ...p,
@@ -64,7 +69,7 @@ describe("GET /api/projects", () => {
 
         expect(prisma.project.findMany).toHaveBeenCalledWith({
             where: {},
-            orderBy: { createdAt: "desc" },
+            orderBy: defaultOrderBy,
             include: projectTagsInclude,
         });
 
@@ -91,7 +96,7 @@ describe("GET /api/projects", () => {
                     some: { tag: { name: { equals: "Residential", mode: "insensitive" } } },
                 },
             },
-            orderBy: { createdAt: "desc" },
+            orderBy: defaultOrderBy,
             include: projectTagsInclude,
         });
 
@@ -120,7 +125,7 @@ describe("GET /api/projects", () => {
 
         expect(prisma.project.findMany).toHaveBeenCalledWith({
             where: { featured: true },
-            orderBy: { createdAt: "desc" },
+            orderBy: defaultOrderBy,
             include: projectTagsInclude,
         });
 
@@ -146,7 +151,7 @@ describe("GET /api/projects", () => {
 
         expect(prisma.project.findMany).toHaveBeenCalledWith({
             where: { featured: false },
-            orderBy: { createdAt: "desc" },
+            orderBy: defaultOrderBy,
             include: projectTagsInclude,
         });
 
@@ -194,7 +199,7 @@ describe("GET /api/projects", () => {
                 },
                 featured: true,
             },
-            orderBy: { createdAt: "desc" },
+            orderBy: defaultOrderBy,
             include: projectTagsInclude,
         });
 
@@ -223,7 +228,7 @@ describe("GET /api/projects", () => {
                     some: { tag: { name: { equals: "NonExistent", mode: "insensitive" } } },
                 },
             },
-            orderBy: { createdAt: "desc" },
+            orderBy: defaultOrderBy,
             include: projectTagsInclude,
         });
 
@@ -248,7 +253,7 @@ describe("GET /api/projects", () => {
 
         expect(prisma.project.findMany).toHaveBeenCalledWith({
             where: { featured: false },
-            orderBy: { createdAt: "desc" },
+            orderBy: defaultOrderBy,
             include: projectTagsInclude,
         });
 
@@ -269,7 +274,7 @@ describe("GET /api/projects", () => {
 
         expect(prisma.project.findMany).toHaveBeenCalledWith({
             where: {},
-            orderBy: { createdAt: "desc" },
+            orderBy: defaultOrderBy,
             include: projectTagsInclude,
         });
 

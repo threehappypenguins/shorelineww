@@ -6,6 +6,7 @@ export interface ProjectApiResponse {
   featured: boolean;
   imageUrl: string | null;
   imagePublicId: string | null;
+  displayOrder: number;
   createdAt: string;
   updatedAt: string;
 }

@@ -19,33 +19,64 @@ const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
 /**
  * GET /api/projects
  *
- * Returns a list of projects, optionally filtered by `tag` and `featured` query parameters.
+ * Returns a list of projects, optionally filtered by `tag`, `featured`, and `year`.
+ * - tag: filter by tag name, or "None" for projects with no tags
+ * - featured: filter by featured status
+ * - year: filter by year (e.g. 2025)
+ * - limit: max number to return; when set, response is { projects, hasMore }
+ * - offset: skip N projects (for pagination with limit)
  */
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const tagParam = searchParams.get("tag");
     const featuredParam = searchParams.get("featured");
+    const yearParam = searchParams.get("year");
+    const limitParam = searchParams.get("limit");
+    const offsetParam = searchParams.get("offset");
 
     const where: {
       featured?: boolean;
-      projectTags?: { some: { tag: { name: { equals: string; mode: "insensitive" } } } };
+      projectTags?:
+        | { some: { tag: { name: { equals: string; mode: "insensitive" } } } }
+        | { none: Record<string, never> };
+      createdAt?: { gte: Date; lt: Date };
     } = {};
 
     if (tagParam && tagParam.trim()) {
-      where.projectTags = {
-        some: { tag: { name: { equals: tagParam.trim(), mode: "insensitive" } } },
-      };
+      if (tagParam.trim().toLowerCase() === "none") {
+        where.projectTags = { none: {} };
+      } else {
+        where.projectTags = {
+          some: { tag: { name: { equals: tagParam.trim(), mode: "insensitive" } } },
+        };
+      }
     }
 
     if (featuredParam !== null && featuredParam !== "") {
       where.featured = featuredParam === "true";
     }
 
+    if (yearParam && /^\d{4}$/.test(yearParam.trim())) {
+      const year = parseInt(yearParam.trim(), 10);
+      where.createdAt = {
+        gte: new Date(year, 0, 1),
+        lt: new Date(year + 1, 0, 1),
+      };
+    }
+
+    const limit =
+      limitParam && /^\d+$/.test(limitParam) ? Math.min(parseInt(limitParam, 10), 100) : null;
+    const offset = offsetParam && /^\d+$/.test(offsetParam) ? parseInt(offsetParam, 10) : 0;
+
     const projects = await prisma.project.findMany({
       where,
-      orderBy: { createdAt: "desc" },
+      orderBy: [{ displayOrder: "asc" }, { createdAt: "desc" }],
       include: { projectTags: { include: { tag: { select: { name: true } } } } },
+      ...(limit != null && {
+        take: limit + 1,
+        skip: offset,
+      }),
     });
 
     const serialized = projects.map((p) => ({
@@ -53,6 +84,12 @@ export async function GET(req: Request) {
       tags: p.projectTags.map((pt) => pt.tag.name),
       projectTags: undefined,
     }));
+
+    if (limit != null) {
+      const hasMore = serialized.length > limit;
+      const slice = hasMore ? serialized.slice(0, limit) : serialized;
+      return NextResponse.json({ projects: slice, hasMore });
+    }
 
     return NextResponse.json(serialized);
   } catch {
@@ -160,6 +197,9 @@ async function handlePostJson(req: Request) {
       : [];
     const tagIds = await resolveTagNamesToIds(tagNames);
 
+    // New projects appear first on /projects: set displayOrder 0 and shift others down
+    await prisma.project.updateMany({ data: { displayOrder: { increment: 1 } } });
+
     const project = await prisma.project.create({
       data: {
         title: titleTrimmed,
@@ -168,6 +208,7 @@ async function handlePostJson(req: Request) {
             ? description.trim() || null
             : null,
         featured: featured === true || featured === "true",
+        displayOrder: 0,
         imageUrl,
         imagePublicId,
         cloudinaryFolder,
@@ -295,6 +336,9 @@ async function handlePostFormData(req: Request) {
     }
     const tagIds = await resolveTagNamesToIds(tagNames);
 
+    // New projects appear first on /projects: set displayOrder 0 and shift others down
+    await prisma.project.updateMany({ data: { displayOrder: { increment: 1 } } });
+
     const project = await prisma.project.create({
       data: {
         title: titleTrimmed,
@@ -303,6 +347,7 @@ async function handlePostFormData(req: Request) {
             ? description.trim() || null
             : null,
         featured: typeof featured === "string" ? featured === "true" : false,
+        displayOrder: 0,
         imageUrl,
         imagePublicId,
         cloudinaryFolder,

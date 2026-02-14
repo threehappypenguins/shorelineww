@@ -15,6 +15,7 @@ export const mockProjects: ProjectApiResponse[] = [
     imageUrl:
       "https://res.cloudinary.com/demo/image/upload/v1738791001/shoreline/projects/oak-condo.jpg",
     imagePublicId: "shoreline/projects/oak-condo",
+    displayOrder: 0,
     createdAt: "2026-02-06T10:15:00.000Z",
     updatedAt: "2026-02-06T10:15:00.000Z",
   },
@@ -28,6 +29,7 @@ export const mockProjects: ProjectApiResponse[] = [
     imageUrl:
       "https://res.cloudinary.com/demo/image/upload/v1738791201/shoreline/projects/maple-install.jpg",
     imagePublicId: "shoreline/projects/maple-install",
+    displayOrder: 1,
     createdAt: "2026-02-05T14:30:00.000Z",
     updatedAt: "2026-02-05T14:30:00.000Z",
   },
@@ -41,6 +43,7 @@ export const mockProjects: ProjectApiResponse[] = [
     imageUrl:
       "https://res.cloudinary.com/demo/image/upload/v1738791401/shoreline/projects/staircase.jpg",
     imagePublicId: "shoreline/projects/staircase",
+    displayOrder: 2,
     createdAt: "2026-02-04T09:45:00.000Z",
     updatedAt: "2026-02-04T09:45:00.000Z",
   },
@@ -54,6 +57,7 @@ export const mockProjects: ProjectApiResponse[] = [
     imageUrl:
       "https://res.cloudinary.com/demo/image/upload/v1738791601/shoreline/projects/showroom.jpg",
     imagePublicId: "shoreline/projects/showroom",
+    displayOrder: 3,
     createdAt: "2026-02-03T16:20:00.000Z",
     updatedAt: "2026-02-03T16:20:00.000Z",
   },
@@ -67,6 +71,7 @@ export const mockProjects: ProjectApiResponse[] = [
     imageUrl:
       "https://res.cloudinary.com/demo/image/upload/v1738791801/shoreline/projects/gym-floor.jpg",
     imagePublicId: "shoreline/projects/gym-floor",
+    displayOrder: 4,
     createdAt: "2026-02-02T11:10:00.000Z",
     updatedAt: "2026-02-02T11:10:00.000Z",
   },

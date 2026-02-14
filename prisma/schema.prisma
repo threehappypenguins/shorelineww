@@ -79,6 +79,7 @@ model Project {
   imagePublicId    String?       // First image Cloudinary ID
   cloudinaryFolder String?       // Cloudinary folder path for this project's images (e.g. projects/20260213-143045)
   featured         Boolean       @default(false)
+  displayOrder     Int           @default(0) // Lower = higher on /projects page; new projects get 0 and others shift down
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
   images           ProjectImage[]

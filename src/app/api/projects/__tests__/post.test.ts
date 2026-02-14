@@ -32,6 +32,7 @@ vi.mock("@/lib/auth-guards", () => ({
 vi.mock("@/lib/db", () => ({
     prisma: {
         project: {
+            updateMany: vi.fn().mockResolvedValue(undefined),
             create: vi.fn(),
         },
     },
@@ -149,6 +150,7 @@ describe("POST /api/projects", () => {
                 title: "Image Project",
                 description: "Project with a valid jpeg image",
                 featured: true,
+                displayOrder: 0,
                 imageUrl: uploaded.secureUrl,
                 imagePublicId: uploaded.publicId,
                 cloudinaryFolder: expect.any(String),
