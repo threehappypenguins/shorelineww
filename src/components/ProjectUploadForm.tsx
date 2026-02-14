@@ -359,8 +359,10 @@ export default function ProjectUploadForm({ onSuccess, editProject }: ProjectUpl
           setUploadProgress(totalBytes ? Math.round((loaded / totalBytes) * 100) : 100);
         };
 
-        const uploadedImages: { secureUrl: string; publicId: string }[] = [];
-        const uploadOne = (file: File, index: number): Promise<void> =>
+        const uploadOne = (
+          file: File,
+          index: number,
+        ): Promise<{ secureUrl: string; publicId: string }> =>
           new Promise((resolve, reject) => {
             const fd = new FormData();
             fd.append('file', file);
@@ -381,11 +383,10 @@ export default function ProjectUploadForm({ onSuccess, editProject }: ProjectUpl
               if (xhr.status >= 200 && xhr.status < 300) {
                 try {
                   const result = JSON.parse(xhr.responseText);
-                  uploadedImages.push({
+                  resolve({
                     secureUrl: result.secure_url,
                     publicId: result.public_id,
                   });
-                  resolve();
                 } catch {
                   reject(new Error('Invalid Cloudinary response'));
                 }
@@ -403,7 +404,9 @@ export default function ProjectUploadForm({ onSuccess, editProject }: ProjectUpl
             xhr.send(fd);
           });
 
-        await Promise.all(imageFiles.map((file, i) => uploadOne(file, i)));
+        const uploadedImages = await Promise.all(
+          imageFiles.map((file, i) => uploadOne(file, i)),
+        );
         setUploadProgress(100);
 
         const projectRes = await fetch('/api/projects', {
@@ -571,6 +574,7 @@ export default function ProjectUploadForm({ onSuccess, editProject }: ProjectUpl
               <label htmlFor="projectDateYear" className="text-sm text-muted-foreground whitespace-nowrap">
                 Year
               </label>
+              {/* aria-invalid accepts "true" | "false"; value is set dynamically for date validation */}
               <select
                 id="projectDateYear"
                 value={projectDateYear}
@@ -582,7 +586,11 @@ export default function ProjectUploadForm({ onSuccess, editProject }: ProjectUpl
                   const m = monthNum || 1;
                   if (y && projectDateDay) setProjectDateDay(clampDayIfNeeded(y, m, projectDateDay));
                 }}
-                aria-invalid={Boolean(dateError && projectDateYear.trim() !== '' && projectDateMonth.trim() === '')}
+                aria-invalid={
+                  dateError && projectDateYear.trim() !== '' && projectDateMonth.trim() === ''
+                    ? 'true'
+                    : 'false'
+                }
                 aria-describedby={dateError ? 'project-date-error' : undefined}
                 className={`px-3 py-2 border-2 rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent bg-background text-foreground ${
                   dateError && projectDateYear.trim() !== '' && projectDateMonth.trim() === ''
@@ -602,6 +610,7 @@ export default function ProjectUploadForm({ onSuccess, editProject }: ProjectUpl
               <label htmlFor="projectDateMonth" className="text-sm text-muted-foreground whitespace-nowrap">
                 Month
               </label>
+              {/* aria-invalid accepts "true" | "false"; value is set dynamically for date validation */}
               <select
                 id="projectDateMonth"
                 value={projectDateMonth}
@@ -613,7 +622,11 @@ export default function ProjectUploadForm({ onSuccess, editProject }: ProjectUpl
                   const y = yearNum || currentYear;
                   if (m && projectDateDay) setProjectDateDay(clampDayIfNeeded(y, m, projectDateDay));
                 }}
-                aria-invalid={Boolean(dateError && projectDateYear.trim() !== '' && projectDateMonth.trim() === '')}
+                aria-invalid={
+                  dateError && projectDateYear.trim() !== '' && projectDateMonth.trim() === ''
+                    ? 'true'
+                    : 'false'
+                }
                 aria-describedby={dateError ? 'project-date-error' : undefined}
                 className={`px-3 py-2 border-2 rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent bg-background text-foreground ${
                   dateError && projectDateYear.trim() !== '' && projectDateMonth.trim() === ''

@@ -124,7 +124,7 @@ export async function GET(req: NextRequest) {
           { status: 400 },
         );
       }
-      const { folderBase, prefix } = dateToFolderAndCreatedAt(year, month, day);
+      const { prefix } = dateToFolderAndCreatedAt(year, month, day);
       const existing = await prisma.project.findMany({
         where: { cloudinaryFolder: { startsWith: prefix } },
         select: { cloudinaryFolder: true },

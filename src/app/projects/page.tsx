@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import { useSession } from 'next-auth/react';
+import ProjectUploadForm from '@/components/ProjectUploadForm';
 import {
   DndContext,
   closestCenter,
@@ -41,9 +42,17 @@ function formatProjectDate(createdAt: string, dateIsMonthOnly?: boolean | null):
 function ProjectCard({
   project,
   priority = false,
+  isAuthenticated = false,
+  onEdit,
+  onDelete,
+  deletingId,
 }: {
   project: ProjectApiResponse;
   priority?: boolean;
+  isAuthenticated?: boolean;
+  onEdit?: (project: ProjectApiResponse) => void;
+  onDelete?: (id: string) => void;
+  deletingId?: string | null;
 }) {
   return (
     <div className="bg-card border border-border rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col">
@@ -66,24 +75,41 @@ function ProjectCard({
       )}
       <div className="p-4 flex flex-col grow">
         <h4 className="font-bold text-lg mb-2 text-foreground">{project.title}</h4>
-        {project.tags && project.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mb-2">
-            {project.tags.map((tag) => (
-              <span
-                key={tag}
-                className="inline-block px-2 py-0.5 rounded bg-primary/15 text-primary text-xs"
-              >
-                {tag}
-              </span>
-            ))}
-          </div>
-        )}
+        <div className="min-h-[1.5rem] flex flex-wrap gap-1.5 mb-2">
+          {project.tags?.map((tag) => (
+            <span
+              key={tag}
+              className="inline-block px-2 py-0.5 rounded bg-primary/15 text-primary text-xs"
+            >
+              {tag}
+            </span>
+          ))}
+        </div>
         {project.description && (
           <p className="text-sm text-foreground/80 line-clamp-3">{project.description}</p>
         )}
         <p className="text-xs text-muted-foreground mt-2">
           {formatProjectDate(project.createdAt, project.dateIsMonthOnly)}
         </p>
+        {isAuthenticated && onEdit && onDelete && (
+          <div className="flex gap-2 mt-3 pt-3 border-t border-border">
+            <button
+              type="button"
+              onClick={() => onEdit(project)}
+              className="flex-1 bg-primary text-primary-foreground py-2 px-4 rounded-lg font-medium hover:bg-accent transition-colors text-sm"
+            >
+              Edit
+            </button>
+            <button
+              type="button"
+              onClick={() => onDelete(project.id)}
+              disabled={deletingId === project.id}
+              className="flex-1 bg-destructive text-destructive-foreground py-2 px-4 rounded-lg font-medium hover:bg-destructive/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+            >
+              {deletingId === project.id ? 'Deleting…' : 'Delete'}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -92,9 +118,17 @@ function ProjectCard({
 function SortableProjectCard({
   project,
   dateKeyOfDragged,
+  isAuthenticated = false,
+  onEdit,
+  onDelete,
+  deletingId,
 }: {
   project: ProjectApiResponse;
   dateKeyOfDragged: string | null;
+  isAuthenticated?: boolean;
+  onEdit?: (project: ProjectApiResponse) => void;
+  onDelete?: (id: string) => void;
+  deletingId?: string | null;
 }) {
   const dateKey = project.createdAt?.slice(0, 10) ?? '';
   const isSameDateGroup = dateKeyOfDragged == null || dateKey === dateKeyOfDragged;
@@ -148,24 +182,41 @@ function SortableProjectCard({
       )}
       <div className="p-4 flex flex-col grow">
         <h4 className="font-bold text-lg mb-2 text-foreground">{project.title}</h4>
-        {project.tags && project.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mb-2">
-            {project.tags.map((tag) => (
-              <span
-                key={tag}
-                className="inline-block px-2 py-0.5 rounded bg-primary/15 text-primary text-xs"
-              >
-                {tag}
-              </span>
-            ))}
-          </div>
-        )}
+        <div className="min-h-[1.5rem] flex flex-wrap gap-1.5 mb-2">
+          {project.tags?.map((tag) => (
+            <span
+              key={tag}
+              className="inline-block px-2 py-0.5 rounded bg-primary/15 text-primary text-xs"
+            >
+              {tag}
+            </span>
+          ))}
+        </div>
         {project.description && (
           <p className="text-sm text-foreground/80 line-clamp-3">{project.description}</p>
         )}
         <p className="text-xs text-muted-foreground mt-2">
           {formatProjectDate(project.createdAt, project.dateIsMonthOnly)}
         </p>
+        {isAuthenticated && onEdit && onDelete && (
+          <div className="flex gap-2 mt-3 pt-3 border-t border-border">
+            <button
+              type="button"
+              onClick={() => onEdit(project)}
+              className="flex-1 bg-primary text-primary-foreground py-2 px-4 rounded-lg font-medium hover:bg-accent transition-colors text-sm"
+            >
+              Edit
+            </button>
+            <button
+              type="button"
+              onClick={() => onDelete(project.id)}
+              disabled={deletingId === project.id}
+              className="flex-1 bg-destructive text-destructive-foreground py-2 px-4 rounded-lg font-medium hover:bg-destructive/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+            >
+              {deletingId === project.id ? 'Deleting…' : 'Delete'}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -187,6 +238,8 @@ export default function ProjectsPage() {
   const [isReorderMode, setIsReorderMode] = useState(false);
   const [isSavingOrder, setIsSavingOrder] = useState(false);
   const [dateKeyOfDragged, setDateKeyOfDragged] = useState<string | null>(null);
+  const [editingProject, setEditingProject] = useState<ProjectApiResponse | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const maxDisplayCountRef = useRef(PAGE_SIZE);
   maxDisplayCountRef.current = Math.max(maxDisplayCountRef.current, projects.length);
@@ -341,10 +394,76 @@ export default function ProjectsPage() {
     }
   };
 
+  const refreshProjects = useCallback(() => {
+    fetchProjects({ limit: Math.max(PAGE_SIZE, projects.length) });
+  }, [fetchProjects, projects.length]);
+
+  const handleEdit = useCallback((project: ProjectApiResponse) => {
+    setEditingProject(project);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
+  const handleCancelEdit = useCallback(() => {
+    setEditingProject(null);
+  }, []);
+
+  const handleProjectSuccess = useCallback(() => {
+    setEditingProject(null);
+    refreshProjects();
+  }, [refreshProjects]);
+
+  const handleDelete = useCallback(
+    async (id: string) => {
+      if (!window.confirm('Are you sure you want to delete this project?')) return;
+      setDeletingId(id);
+      try {
+        const res = await fetch(`/api/projects/${id}`, {
+          method: 'DELETE',
+          credentials: 'include',
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.error || 'Failed to delete project');
+        }
+        await refreshProjects();
+      } catch (err) {
+        alert(err instanceof Error ? err.message : 'Failed to delete project');
+      } finally {
+        setDeletingId(null);
+      }
+    },
+    [refreshProjects],
+  );
+
   return (
     <div className="pt-16 min-h-screen">
       <div className="max-w-7xl mx-auto px-4 py-12">
         <h1 className="text-4xl font-bold mb-4 text-foreground">Projects</h1>
+
+        {/* Project upload form (authenticated only) */}
+        {isAuthenticated && (
+          <div className="mb-8 sm:mb-12">
+            {editingProject && (
+              <div className="mb-4 flex flex-wrap items-center gap-2">
+                <span className="text-sm text-muted-foreground">Editing:</span>
+                <button
+                  type="button"
+                  onClick={handleCancelEdit}
+                  className="inline-flex items-center gap-2 rounded-lg border-2 border-amber-500/70 bg-amber-500/10 px-4 py-2.5 text-sm font-semibold text-amber-700 shadow-sm transition-colors hover:border-amber-500 hover:bg-amber-500/20 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 dark:text-amber-400 dark:hover:bg-amber-500/25"
+                  aria-label="Cancel editing and close form"
+                >
+                  <span aria-hidden>✕</span>
+                  Cancel editing
+                </button>
+              </div>
+            )}
+            <ProjectUploadForm
+              key={editingProject?.id ?? 'new'}
+              onSuccess={handleProjectSuccess}
+              editProject={editingProject ?? undefined}
+            />
+          </div>
+        )}
 
         {/* Tag + Year filters + Edit order (when authenticated) */}
         {!isReorderMode && (
@@ -388,6 +507,7 @@ export default function ProjectsPage() {
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-sm text-muted-foreground">Year:</span>
               <select
+                aria-label="Filter by year"
                 value={selectedYear ?? ''}
                 onChange={(e) =>
                   setSelectedYear(e.target.value ? parseInt(e.target.value, 10) : null)
@@ -482,6 +602,10 @@ export default function ProjectsPage() {
                   key={project.id}
                   project={project}
                   priority={index < 3}
+                  isAuthenticated={isAuthenticated}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                  deletingId={deletingId}
                 />
               ))}
             </div>
@@ -514,6 +638,10 @@ export default function ProjectsPage() {
                       key={project.id}
                       project={project}
                       dateKeyOfDragged={dateKeyOfDragged}
+                      isAuthenticated={isAuthenticated}
+                      onEdit={handleEdit}
+                      onDelete={handleDelete}
+                      deletingId={deletingId}
                     />
                   ))}
                 </div>

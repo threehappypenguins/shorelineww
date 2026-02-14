@@ -3,21 +3,19 @@
 import { useSession } from 'next-auth/react';
 import { redirect } from 'next/navigation';
 import { useState } from 'react';
-import ProjectsTab from './components/ProjectsTab';
 import SiteContentTab from './components/SiteContentTab';
 import SettingsTab from './components/SettingsTab';
 
-type TabType = 'projects' | 'site-content' | 'settings';
+type TabType = 'site-content' | 'settings';
 
 const tabs = [
-  { id: 'projects' as TabType, label: 'Projects', icon: '📸' },
-  { id: 'site-content' as TabType, label: 'Site Content', icon: '📝' },
   { id: 'settings' as TabType, label: 'Settings', icon: '⚙️' },
+  { id: 'site-content' as TabType, label: 'Site Content', icon: '📝' },
 ];
 
 export default function AdminPage() {
   const { status } = useSession();
-  const [activeTab, setActiveTab] = useState<TabType>('projects');
+  const [activeTab, setActiveTab] = useState<TabType>('settings');
 
   // Loading state
   if (status === 'loading') {
@@ -99,9 +97,8 @@ export default function AdminPage() {
 
           {/* Tab Content */}
           <div className="mt-6">
-            {activeTab === 'projects' && <ProjectsTab />}
-            {activeTab === 'site-content' && <SiteContentTab />}
             {activeTab === 'settings' && <SettingsTab />}
+            {activeTab === 'site-content' && <SiteContentTab />}
           </div>
         </div>
       </div>

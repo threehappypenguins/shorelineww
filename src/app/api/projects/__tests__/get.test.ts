@@ -41,8 +41,8 @@ const projectTagsInclude = {
 };
 
 const defaultOrderBy = [
-    { displayOrder: "asc" as const },
     { createdAt: "desc" as const },
+    { displayOrder: "asc" as const },
 ];
 
 function withProjectTags(projects: typeof mockProjects) {

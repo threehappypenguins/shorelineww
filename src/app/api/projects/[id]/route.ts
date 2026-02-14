@@ -71,7 +71,7 @@ async function resolveFolderForDate(
   day: number | undefined,
   excludeProjectId: string,
 ): Promise<{ folder: string; createdAt: Date }> {
-  const { folderBase, prefix, createdAt: baseDate } = dateToFolderAndCreatedAt(
+  const { prefix, createdAt: baseDate } = dateToFolderAndCreatedAt(
     year,
     month,
     day,
