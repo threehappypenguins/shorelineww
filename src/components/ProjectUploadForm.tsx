@@ -491,7 +491,7 @@ export default function ProjectUploadForm({ onSuccess, editProject }: ProjectUpl
                         <button
                           type="button"
                           onClick={() => removeExistingImageAt(index)}
-                          className="absolute top-1 right-1 bg-destructive text-destructive-foreground w-6 h-6 rounded text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                          className="absolute top-2 right-2 flex items-center justify-center bg-destructive text-destructive-foreground w-8 h-8 rounded-full text-lg font-bold shadow-md hover:scale-110 transition-all z-10"
                           title="Remove this image"
                           aria-label="Remove this image"
                         >
@@ -522,7 +522,9 @@ export default function ProjectUploadForm({ onSuccess, editProject }: ProjectUpl
                       <button
                         type="button"
                         onClick={() => removeNewImageAt(index)}
-                        className="absolute top-1 right-1 bg-destructive text-destructive-foreground w-6 h-6 rounded text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                        className="absolute top-2 right-2 flex items-center justify-center bg-destructive text-destructive-foreground w-8 h-8 rounded-full text-lg font-bold shadow-md hover:scale-110 transition-all z-10"
+                        title="Remove this image"
+                        aria-label="Remove this image"
                       >
                         ×
                       </button>
