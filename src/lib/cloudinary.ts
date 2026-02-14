@@ -35,6 +35,70 @@ export function generateProjectFolder(): string {
   return `${DEFAULT_PROJECTS_FOLDER}/${y}${m}${d}-${h}${min}${s}`;
 }
 
+/** Result of converting a project date (year/month/day) to folder and createdAt. */
+export interface ProjectDateFolderResult {
+  /** Folder path for this date with time 00:00:00, e.g. projects/20250201-000000 */
+  folderBase: string;
+  /** Prefix to match existing folders for same day, e.g. projects/20250201- */
+  prefix: string;
+  /** Date at midnight (00:00:00) for the chosen day (day defaults to 1). */
+  createdAt: Date;
+}
+
+/**
+ * Convert year/month/day to Cloudinary folder base and createdAt.
+ * Day defaults to 1 (first of month). Time is midnight (00:00:00).
+ * Used with resolveProjectFolderUniqueness to get a unique folder when multiple
+ * projects share the same year+month (no day) → same day 1, seconds incremented.
+ */
+export function dateToFolderAndCreatedAt(
+  year: number,
+  month: number,
+  day?: number,
+): ProjectDateFolderResult {
+  const d = day ?? 1;
+  const date = new Date(year, month - 1, d, 0, 0, 0, 0);
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const dayStr = String(date.getDate()).padStart(2, "0");
+  const prefix = `${DEFAULT_PROJECTS_FOLDER}/${y}${m}${dayStr}-`;
+  const folderBase = `${prefix}000000`;
+  return { folderBase, prefix, createdAt: date };
+}
+
+/**
+ * Format a Date as a Cloudinary folder path (projects/YYYYMMDD-HHmmss).
+ */
+export function dateToFolderString(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  const h = String(date.getHours()).padStart(2, "0");
+  const min = String(date.getMinutes()).padStart(2, "0");
+  const s = String(date.getSeconds()).padStart(2, "0");
+  return `${DEFAULT_PROJECTS_FOLDER}/${y}${m}${d}-${h}${min}${s}`;
+}
+
+/**
+ * Parse a Cloudinary folder path (e.g. projects/20250201-000001) to a Date.
+ * Returns null if the format is invalid.
+ */
+export function parseFolderToCreatedAt(folder: string | null | undefined): Date | null {
+  if (!folder || typeof folder !== "string") return null;
+  const match = folder.trim().match(/^projects\/(\d{4})(\d{2})(\d{2})-(\d{2})(\d{2})(\d{2})$/);
+  if (!match) return null;
+  const [, y, m, d, h, min, s] = match;
+  const date = new Date(
+    parseInt(y!, 10),
+    parseInt(m!, 10) - 1,
+    parseInt(d!, 10),
+    parseInt(h!, 10),
+    parseInt(min!, 10),
+    parseInt(s!, 10),
+  );
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
 /**
  * Generate signed upload parameters for client-side uploads. The client uses
  * these with the file in a POST to Cloudinary; the signature proves the upload

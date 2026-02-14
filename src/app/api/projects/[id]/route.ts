@@ -4,6 +4,7 @@ import { verifyAdmin } from "@/lib/auth-guards";
 import { resolveTagNamesToIds } from "@/lib/tags";
 import {
   DEFAULT_PROJECTS_FOLDER,
+  dateToFolderAndCreatedAt,
   deleteFolder,
   deleteImage,
   uploadImage,
@@ -20,6 +21,29 @@ const ALLOWED_IMAGE_TYPES = new Set([
 ]);
 
 const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
+const MIN_YEAR = 1970;
+const MIN_MONTH = 1;
+const MAX_MONTH = 12;
+
+/** Parse HHmmss suffix to seconds since midnight. */
+function suffixToSeconds(suffix: string): number {
+  if (!/^\d{6}$/.test(suffix)) return 0;
+  const h = parseInt(suffix.slice(0, 2), 10);
+  const m = parseInt(suffix.slice(2, 4), 10);
+  const s = parseInt(suffix.slice(4, 6), 10);
+  return h * 3600 + m * 60 + s;
+}
+
+function secondsToSuffix(seconds: number): string {
+  const s = Math.max(0, Math.floor(seconds)) % 60;
+  const m = Math.floor(seconds / 60) % 60;
+  const h = Math.floor(seconds / 3600);
+  return [
+    String(h).padStart(2, "0"),
+    String(m).padStart(2, "0"),
+    String(s).padStart(2, "0"),
+  ].join("");
+}
 
 /** Derive folder from project createdAt for legacy projects without cloudinaryFolder. */
 function folderForProject(project: {
@@ -35,6 +59,57 @@ function folderForProject(project: {
   const min = String(d.getMinutes()).padStart(2, "0");
   const s = String(d.getSeconds()).padStart(2, "0");
   return `${DEFAULT_PROJECTS_FOLDER}/${y}${m}${day}-${h}${min}${s}`;
+}
+
+/**
+ * Resolve a unique folder and createdAt for the given date, excluding the current
+ * project so re-saving the same date keeps the same folder.
+ */
+async function resolveFolderForDate(
+  year: number,
+  month: number,
+  day: number | undefined,
+  excludeProjectId: string,
+): Promise<{ folder: string; createdAt: Date }> {
+  const { prefix, createdAt: baseDate } = dateToFolderAndCreatedAt(
+    year,
+    month,
+    day,
+  );
+  const existing = await prisma.project.findMany({
+    where: {
+      cloudinaryFolder: { startsWith: prefix },
+      id: { not: excludeProjectId },
+    },
+    select: { cloudinaryFolder: true },
+  });
+  let maxSeconds = 0;
+  for (const p of existing) {
+    const suffix = p.cloudinaryFolder?.slice(-6) ?? "";
+    maxSeconds = Math.max(maxSeconds, suffixToSeconds(suffix));
+  }
+  const nextSeconds = maxSeconds + 1;
+  const folder = `${prefix}${secondsToSuffix(nextSeconds)}`;
+  const createdAt = new Date(baseDate.getTime() + nextSeconds * 1000);
+  return { folder, createdAt };
+}
+
+/**
+ * Find the displayOrder index where a project with the given createdAt should sit
+ * so that when listed by displayOrder, newest first (0 = newest). Excludes the
+ * project being moved (excludeProjectId) so we don't count it in the list.
+ */
+async function getDisplayOrderInsertIndex(
+  createdAt: Date,
+  excludeProjectId: string,
+): Promise<number> {
+  const projects = await prisma.project.findMany({
+    where: { id: { not: excludeProjectId } },
+    orderBy: { displayOrder: "asc" },
+    select: { id: true, displayOrder: true, createdAt: true },
+  });
+  const insertIndex = projects.filter((p) => p.createdAt > createdAt).length;
+  return insertIndex;
 }
 
 type RouteParams = {
@@ -115,6 +190,68 @@ export async function PATCH(req: Request, { params }: RouteParams) {
       keepPublicIdsRaw.filter((x): x is string => typeof x === "string"),
     );
     const thumbnailIndexRaw = formData.get("thumbnailIndex");
+    const projectDateYearRaw = formData.get("projectDateYear");
+    const projectDateMonthRaw = formData.get("projectDateMonth");
+    const projectDateDayRaw = formData.get("projectDateDay");
+
+    let resolvedDate: { folder: string; createdAt: Date } | null = null;
+    let resolvedDateIsMonthOnly: boolean | null = null;
+    if (
+      projectDateYearRaw != null &&
+      typeof projectDateYearRaw === "string" &&
+      projectDateYearRaw.trim() !== "" &&
+      projectDateMonthRaw != null &&
+      typeof projectDateMonthRaw === "string" &&
+      projectDateMonthRaw.trim() !== ""
+    ) {
+      const year = parseInt(projectDateYearRaw.trim(), 10);
+      const month = parseInt(projectDateMonthRaw.trim(), 10);
+      const day =
+        projectDateDayRaw != null && typeof projectDateDayRaw === "string" && projectDateDayRaw.trim() !== ""
+          ? parseInt(projectDateDayRaw.trim(), 10)
+          : undefined;
+      if (
+        !Number.isNaN(year) &&
+        year >= MIN_YEAR &&
+        !Number.isNaN(month) &&
+        month >= MIN_MONTH &&
+        month <= MAX_MONTH &&
+        (day === undefined || (!Number.isNaN(day) && day >= 1 && day <= 31))
+      ) {
+        resolvedDate = await resolveFolderForDate(year, month, day, id);
+        resolvedDateIsMonthOnly = day === undefined;
+      }
+    }
+
+    const folderToUse = resolvedDate?.folder ?? folderForProject(existing);
+
+    if (resolvedDate) {
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      const chosenStart = new Date(resolvedDate.createdAt);
+      chosenStart.setHours(0, 0, 0, 0);
+      if (chosenStart > todayStart) {
+        return NextResponse.json(
+          { error: "Project date cannot be in the future" },
+          { status: 400 },
+        );
+      }
+    }
+
+    let displayOrderInsertIndex: number | null = null;
+    if (resolvedDate) {
+      displayOrderInsertIndex = await getDisplayOrderInsertIndex(
+        resolvedDate.createdAt,
+        id,
+      );
+      await prisma.project.updateMany({
+        where: {
+          displayOrder: { gte: displayOrderInsertIndex },
+          id: { not: id },
+        },
+        data: { displayOrder: { increment: 1 } },
+      });
+    }
 
     if (!title || typeof title !== "string") {
       return NextResponse.json(
@@ -184,7 +321,6 @@ export async function PATCH(req: Request, { params }: RouteParams) {
       await prisma.projectImage.deleteMany({ where: { projectId: id } });
 
       if (imageFiles.length > 0) {
-        const folder = folderForProject(existing);
         const uploadedImages: { secureUrl: string; publicId: string }[] = [];
         for (const image of imageFiles) {
           if (!ALLOWED_IMAGE_TYPES.has(image.type)) {
@@ -203,7 +339,7 @@ export async function PATCH(req: Request, { params }: RouteParams) {
             );
           }
           const buffer = Buffer.from(await image.arrayBuffer());
-          const uploaded = await uploadImage(buffer, { folder });
+          const uploaded = await uploadImage(buffer, { folder: folderToUse });
           newUploadedPublicIds.push(uploaded.publicId);
           uploadedImages.push({ secureUrl: uploaded.secureUrl, publicId: uploaded.publicId });
         }
@@ -222,7 +358,12 @@ export async function PATCH(req: Request, { params }: RouteParams) {
                 : existing.featured,
             imageUrl: first.secureUrl,
             imagePublicId: first.publicId,
-            cloudinaryFolder: existing.cloudinaryFolder ?? folder,
+            cloudinaryFolder: folderToUse,
+            ...(resolvedDate && {
+              createdAt: resolvedDate.createdAt,
+              ...(displayOrderInsertIndex != null && { displayOrder: displayOrderInsertIndex }),
+              ...(resolvedDateIsMonthOnly !== null && { dateIsMonthOnly: resolvedDateIsMonthOnly }),
+            }),
             images: {
               create: uploadedImages.map((img, index) => ({
                 imageUrl: img.secureUrl,
@@ -248,6 +389,12 @@ export async function PATCH(req: Request, { params }: RouteParams) {
                 : existing.featured,
             imageUrl: null,
             imagePublicId: null,
+            ...(resolvedDate && {
+              cloudinaryFolder: folderToUse,
+              createdAt: resolvedDate.createdAt,
+              ...(displayOrderInsertIndex != null && { displayOrder: displayOrderInsertIndex }),
+              ...(resolvedDateIsMonthOnly !== null && { dateIsMonthOnly: resolvedDateIsMonthOnly }),
+            }),
             ...projectTagsUpdate,
           },
         });
@@ -283,7 +430,6 @@ export async function PATCH(req: Request, { params }: RouteParams) {
 
       const uploadedImages: { secureUrl: string; publicId: string }[] = [];
       if (imageFiles.length > 0) {
-        const folder = folderForProject(existing);
         for (const image of imageFiles) {
           if (!ALLOWED_IMAGE_TYPES.has(image.type)) {
             return NextResponse.json(
@@ -301,7 +447,7 @@ export async function PATCH(req: Request, { params }: RouteParams) {
             );
           }
           const buffer = Buffer.from(await image.arrayBuffer());
-          const uploaded = await uploadImage(buffer, { folder });
+          const uploaded = await uploadImage(buffer, { folder: folderToUse });
           newUploadedPublicIds.push(uploaded.publicId);
           uploadedImages.push({ secureUrl: uploaded.secureUrl, publicId: uploaded.publicId });
         }
@@ -326,6 +472,12 @@ export async function PATCH(req: Request, { params }: RouteParams) {
               : existing.featured,
           imageUrl: newImageUrl,
           imagePublicId: newImagePublicId,
+            ...(resolvedDate && {
+              cloudinaryFolder: folderToUse,
+              createdAt: resolvedDate.createdAt,
+              ...(displayOrderInsertIndex != null && { displayOrder: displayOrderInsertIndex }),
+              ...(resolvedDateIsMonthOnly !== null && { dateIsMonthOnly: resolvedDateIsMonthOnly }),
+            }),
           ...(uploadedImages.length > 0 && {
             images: {
               create: uploadedImages.map((img, index) => ({
@@ -339,7 +491,7 @@ export async function PATCH(req: Request, { params }: RouteParams) {
         },
       });
     } else {
-      // No image change: update text/featured only
+      // No image change: update text/featured/date only
       await prisma.project.update({
         where: { id },
         data: {
@@ -352,6 +504,12 @@ export async function PATCH(req: Request, { params }: RouteParams) {
             typeof featured === "string"
               ? featured === "true"
               : existing.featured,
+          ...(resolvedDate && {
+            cloudinaryFolder: folderToUse,
+            createdAt: resolvedDate.createdAt,
+            ...(displayOrderInsertIndex != null && { displayOrder: displayOrderInsertIndex }),
+            ...(resolvedDateIsMonthOnly !== null && { dateIsMonthOnly: resolvedDateIsMonthOnly }),
+          }),
           ...projectTagsUpdate,
         },
       });

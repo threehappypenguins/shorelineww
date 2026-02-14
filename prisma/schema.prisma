@@ -78,7 +78,9 @@ model Project {
   imageUrl         String?       // First image URL for listing/cards (derived from images[0])
   imagePublicId    String?       // First image Cloudinary ID
   cloudinaryFolder String?       // Cloudinary folder path for this project's images (e.g. projects/20260213-143045)
+  dateIsMonthOnly  Boolean?      // true when upload/edit had only year+month (no day); display "Month Year" only
   featured         Boolean       @default(false)
+  displayOrder     Int           @default(0) // Lower = higher on /projects page; new projects get 0 and others shift down
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
   images           ProjectImage[]

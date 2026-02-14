@@ -40,10 +40,33 @@ const projectTagsInclude = {
     projectTags: { include: { tag: { select: { name: true } } } },
 };
 
+const imagesInclude = {
+    images: { orderBy: { sortOrder: "asc" as const }, select: { imageUrl: true } },
+};
+
+const defaultInclude = {
+    ...projectTagsInclude,
+    ...imagesInclude,
+};
+
+const defaultOrderBy = [
+    { createdAt: "desc" as const },
+    { displayOrder: "asc" as const },
+];
+
 function withProjectTags(projects: typeof mockProjects) {
     return projects.map((p) => ({
         ...p,
         projectTags: (p.tags ?? []).map((name) => ({ tag: { name } })),
+        images: p.imageUrl ? [{ imageUrl: p.imageUrl }] : [],
+    }));
+}
+
+function expectedProjectList(projects: typeof mockProjects) {
+    return projects.map((p) => ({
+        ...p,
+        tags: p.tags ?? [],
+        images: p.imageUrl ? [{ imageUrl: p.imageUrl }] : [],
     }));
 }
 
@@ -64,12 +87,12 @@ describe("GET /api/projects", () => {
 
         expect(prisma.project.findMany).toHaveBeenCalledWith({
             where: {},
-            orderBy: { createdAt: "desc" },
-            include: projectTagsInclude,
+            orderBy: defaultOrderBy,
+            include: defaultInclude,
         });
 
         const body = await res.json();
-        expect(body).toEqual(mockProjects.map((p) => ({ ...p, tags: p.tags ?? [] })));
+        expect(body).toEqual(expectedProjectList(mockProjects));
     });
 
     /**
@@ -91,13 +114,13 @@ describe("GET /api/projects", () => {
                     some: { tag: { name: { equals: "Residential", mode: "insensitive" } } },
                 },
             },
-            orderBy: { createdAt: "desc" },
-            include: projectTagsInclude,
+            orderBy: defaultOrderBy,
+            include: defaultInclude,
         });
 
         const body = await res.json();
         expect(res.status).toBe(200);
-        expect(body).toEqual(residentialProjects.map((p) => ({ ...p, tags: p.tags ?? [] })));
+        expect(body).toEqual(expectedProjectList(residentialProjects));
         expect(
             body.every((project: ProjectApiResponse & { tags?: string[] }) =>
                 project.tags?.includes("Residential"),
@@ -120,13 +143,13 @@ describe("GET /api/projects", () => {
 
         expect(prisma.project.findMany).toHaveBeenCalledWith({
             where: { featured: true },
-            orderBy: { createdAt: "desc" },
-            include: projectTagsInclude,
+            orderBy: defaultOrderBy,
+            include: defaultInclude,
         });
 
         const body = await res.json();
         expect(res.status).toBe(200);
-        expect(body).toEqual(featuredProjects.map((p) => ({ ...p, tags: p.tags ?? [] })));
+        expect(body).toEqual(expectedProjectList(featuredProjects));
         expect((body[0] as ProjectApiResponse).featured).toBe(true);
         expect(body.length).toBe(1);
     });
@@ -146,13 +169,13 @@ describe("GET /api/projects", () => {
 
         expect(prisma.project.findMany).toHaveBeenCalledWith({
             where: { featured: false },
-            orderBy: { createdAt: "desc" },
-            include: projectTagsInclude,
+            orderBy: defaultOrderBy,
+            include: defaultInclude,
         });
 
         const body = await res.json();
         expect(res.status).toBe(200);
-        expect(body).toEqual(nonFeaturedProjects.map((p) => ({ ...p, tags: p.tags ?? [] })));
+        expect(body).toEqual(expectedProjectList(nonFeaturedProjects));
         expect(body.every((project: ProjectApiResponse) => !project.featured)).toBe(true);
         expect(body.length).toBe(mockProjects.length - 1);
     });
@@ -194,13 +217,13 @@ describe("GET /api/projects", () => {
                 },
                 featured: true,
             },
-            orderBy: { createdAt: "desc" },
-            include: projectTagsInclude,
+            orderBy: defaultOrderBy,
+            include: defaultInclude,
         });
 
         const body = await res.json();
         expect(res.status).toBe(200);
-        expect(body).toEqual(featuredResidentialProjects.map((p) => ({ ...p, tags: p.tags ?? [] })));
+        expect(body).toEqual(expectedProjectList(featuredResidentialProjects));
         expect(body.every((project: ProjectApiResponse & { tags?: string[] }) =>
             project.tags?.includes("Residential"),
         )).toBe(true);
@@ -223,8 +246,8 @@ describe("GET /api/projects", () => {
                     some: { tag: { name: { equals: "NonExistent", mode: "insensitive" } } },
                 },
             },
-            orderBy: { createdAt: "desc" },
-            include: projectTagsInclude,
+            orderBy: defaultOrderBy,
+            include: defaultInclude,
         });
 
         const body = await res.json();
@@ -248,13 +271,13 @@ describe("GET /api/projects", () => {
 
         expect(prisma.project.findMany).toHaveBeenCalledWith({
             where: { featured: false },
-            orderBy: { createdAt: "desc" },
-            include: projectTagsInclude,
+            orderBy: defaultOrderBy,
+            include: defaultInclude,
         });
 
         const body = await res.json();
         expect(res.status).toBe(200);
-        expect(body).toEqual(nonFeaturedProjects.map((p) => ({ ...p, tags: p.tags ?? [] })));
+        expect(body).toEqual(expectedProjectList(nonFeaturedProjects));
     });
 
     /**
@@ -269,12 +292,12 @@ describe("GET /api/projects", () => {
 
         expect(prisma.project.findMany).toHaveBeenCalledWith({
             where: {},
-            orderBy: { createdAt: "desc" },
-            include: projectTagsInclude,
+            orderBy: defaultOrderBy,
+            include: defaultInclude,
         });
 
         const body = await res.json();
         expect(res.status).toBe(200);
-        expect(body).toEqual(mockProjects.map((p) => ({ ...p, tags: p.tags ?? [] })));
+        expect(body).toEqual(expectedProjectList(mockProjects));
     });
 });

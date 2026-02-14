@@ -165,9 +165,9 @@ export default function ProjectList({ onEdit }: ProjectListProps) {
               </p>
             )}
 
-            {/* Created Date */}
+            {/* Date */}
             <div className="text-xs text-muted-foreground mb-4">
-              Created: {formatDate(project.createdAt)}
+              {formatDate(project.createdAt)}
             </div>
 
             {/* Action Buttons */}
