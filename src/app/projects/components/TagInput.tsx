@@ -173,7 +173,7 @@ export default function TagInput({
                 e.stopPropagation();
                 removeTag(i);
               }}
-              className="hover:bg-primary/30 rounded p-0.5 leading-none transition-colors"
+              className="hover:bg-primary/30 rounded p-0.5 transition-colors"
               aria-label={`Remove ${tag}`}
             >
               ×
