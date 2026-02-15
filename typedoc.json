@@ -1,0 +1,19 @@
+{
+  "entryPoints": ["src"],
+  "entryPointStrategy": "expand",
+  "out": "docs/generated",
+  "theme": "default",
+  "includeVersion": true,
+  "excludePrivate": true,
+  "excludeProtected": false,
+  "excludeInternal": true,
+  "excludeExternals": true,
+  "readme": "README.md",
+  "sort": ["source-order"],
+  "validation": {
+    "invalidLink": true
+  },
+  "searchInComments": true
+}
+
+

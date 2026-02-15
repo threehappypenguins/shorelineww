@@ -15,6 +15,9 @@
 cypress/videos
 cypress/screenshots
 
+# documentation
+docs/generated
+
 # next.js
 /.next/
 /out/
