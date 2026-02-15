@@ -69,3 +69,22 @@ jobs:
 
       - name: Run build
         run: pnpm build
+      
+      - name: Generate TypeDoc documentation
+        run: pnpm typedoc
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: 'docs/generated'
+
+  deploy:
+    needs: ci
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
