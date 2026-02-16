@@ -13,7 +13,9 @@
     "test:coverage": "vitest run --coverage",
     "cy:open": "cypress open",
     "cy:run": "cypress run",
-    "docs": "typedoc"
+    "docs": "pnpm run docs:api && pnpm run docs:frontend",
+    "docs:api": "typedoc --options typedoc.json -out doc-site/public/api --entryPoints src/app/api",
+    "docs:frontend": "typedoc --options typedoc.json --exclude \"**/src/app/api/**\" --out \"doc-site/public/frontend\""
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.1",

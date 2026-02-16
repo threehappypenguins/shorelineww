@@ -8,7 +8,7 @@
   "excludeProtected": false,
   "excludeInternal": true,
   "excludeExternals": true,
-  "readme": "README.md",
+  "readme": "none",
   "sort": ["source-order"],
   "validation": {
     "invalidLink": true
