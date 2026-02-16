@@ -1,7 +1,7 @@
 {
   "name": "Shoreline Woodworks",
   "description": "Stairs, railings, millwork, flooring, and renovations.",
-  "display": "browser",
+  "display": "standalone",
   "icons": [
     {
       "src": "/android-chrome-192x192.png",
