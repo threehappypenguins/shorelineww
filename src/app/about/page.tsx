@@ -3,7 +3,24 @@ import { prisma } from '@/lib/db';
 import Story from './story';
 import WhatWeDo from './what-we-do';
 
-const ABOUT_KEYS = ['about.ourStoryHeading', 'about.ourStoryBody'] as const;
+const ABOUT_KEYS = ['about.ourStoryHeading', 'about.ourStoryBody', 'about.whatWeDo'] as const;
+
+type WhatWeDoStored = { heading: string; cards: { title: string; description: string }[] };
+
+function parseWhatWeDo(raw: string | null): WhatWeDoStored | null {
+  if (raw == null || raw === '') return null;
+  try {
+    const parsed = JSON.parse(raw) as WhatWeDoStored;
+    if (typeof parsed?.heading !== 'string' || !Array.isArray(parsed?.cards)) return null;
+    const cards = parsed.cards.filter(
+      (c): c is { title: string; description: string } =>
+        c != null && typeof c.title === 'string' && typeof c.description === 'string'
+    );
+    return { heading: parsed.heading, cards };
+  } catch {
+    return null;
+  }
+}
 
 export default async function About() {
   const [session, settingsRows] = await Promise.all([
@@ -19,6 +36,7 @@ export default async function About() {
     settings[k] = settingsRows.find((r) => r.key === k)?.value ?? null;
   }
 
+  const whatWeDo = parseWhatWeDo(settings['about.whatWeDo']);
   const isAdmin = !!(
     session?.user &&
     'isAdmin' in session.user &&
@@ -37,7 +55,11 @@ export default async function About() {
           initialBody={settings['about.ourStoryBody']}
           isAdmin={isAdmin}
         />
-        <WhatWeDo />
+        <WhatWeDo
+          initialHeading={whatWeDo?.heading ?? null}
+          initialCards={whatWeDo?.cards?.length ? whatWeDo.cards : null}
+          isAdmin={isAdmin}
+        />
         <div className="mt-8 text-center">
           <a 
             href="/contact" 
