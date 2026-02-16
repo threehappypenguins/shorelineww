@@ -13,7 +13,8 @@
   "validation": {
     "invalidLink": true
   },
-  "searchInComments": true
+  "searchInComments": true,
+  "exclude": ["**/*.md", "**/node_modules/**", "**/dist/**", "**/build/**", "**/doc-site/**", "**/tests/**", "**/__tests__/**", "**/*.test.ts", "**/*.spec.ts"]
 }
 
 
