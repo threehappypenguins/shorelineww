@@ -70,7 +70,7 @@ describe("AdminPage", () => {
 
       try {
         render(<AdminPage />);
-      } catch (error) {
+      } catch {
         // Expected: redirect throws an error
       }
 

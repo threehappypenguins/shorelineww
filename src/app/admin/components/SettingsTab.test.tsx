@@ -309,7 +309,7 @@ describe("SettingsTab", () => {
     it("disables Save button when saving", async () => {
       const user = userEvent.setup();
       let resolveSave: () => void;
-      const savePromise = new Promise<void>((resolve) => {
+      void new Promise<void>((resolve) => {
         resolveSave = resolve;
       });
 
@@ -584,7 +584,7 @@ describe("SettingsTab", () => {
       const user = userEvent.setup();
       mockConfirm.mockReturnValue(true);
       let resolveDelete: () => void;
-      const deletePromise = new Promise<void>((resolve) => {
+      void new Promise<void>((resolve) => {
         resolveDelete = resolve;
       });
 
