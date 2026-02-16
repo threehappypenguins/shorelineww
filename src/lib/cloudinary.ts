@@ -1,19 +1,31 @@
+/**
+ * @module lib/cloudinary
+ * @description Cloudinary integration utilities for image upload, deletion, and URL generation.
+ * Provides functions for managing project images in Cloudinary storage.
+ */
 import { v2 as cloudinary } from "cloudinary";
 
+// Configure Cloudinary with secure URLs
+// Credentials are read from process.env.CLOUDINARY_URL by default
 cloudinary.config({
   secure: true,
-  // Credentials are read from process.env.CLOUDINARY_URL by default
 });
 
 /**
- * Parameters for a single client-side signed upload. The client sends these
- * (plus the file) to Cloudinary; only your server can generate valid signatures.
+ * Parameters for a single client-side signed upload.
+ * The client sends these (plus the file) to Cloudinary.
+ * Only your server can generate valid signatures.
  */
 export interface SignedUploadParams {
+  /** Cloudinary cloud name */
   cloudName: string;
+  /** Cloudinary API key */
   apiKey: string;
+  /** Unix timestamp when signature was generated */
   timestamp: number;
+  /** Cryptographic signature for upload authorization */
   signature: string;
+  /** Target folder path in Cloudinary */
   folder: string;
 }
 
@@ -22,7 +34,7 @@ export const DEFAULT_PROJECTS_FOLDER = "projects";
 
 /**
  * Generate a unique Cloudinary folder path for a new project, based on creation date/time.
- * Format: projects/YYYYMMDD-HHmmss (e.g., projects/20260213-214530).
+ * @returns Folder path in format `projects/YYYYMMDD-HHmmss` (e.g., `projects/20260213-214530`)
  */
 export function generateProjectFolder(): string {
   const now = new Date();
@@ -35,13 +47,15 @@ export function generateProjectFolder(): string {
   return `${DEFAULT_PROJECTS_FOLDER}/${y}${m}${d}-${h}${min}${s}`;
 }
 
-/** Result of converting a project date (year/month/day) to folder and createdAt. */
+/**
+ * Result of converting a project date (year/month/day) to folder and createdAt.
+ */
 export interface ProjectDateFolderResult {
-  /** Folder path for this date with time 00:00:00, e.g. projects/20250201-000000 */
+  /** Folder path for this date with time 00:00:00, e.g. `projects/20250201-000000` */
   folderBase: string;
-  /** Prefix to match existing folders for same day, e.g. projects/20250201- */
+  /** Prefix to match existing folders for same day, e.g. `projects/20250201-` */
   prefix: string;
-  /** Date at midnight (00:00:00) for the chosen day (day defaults to 1). */
+  /** Date at midnight (00:00:00) for the chosen day (day defaults to 1) */
   createdAt: Date;
 }
 
@@ -50,6 +64,11 @@ export interface ProjectDateFolderResult {
  * Day defaults to 1 (first of month). Time is midnight (00:00:00).
  * Used with resolveProjectFolderUniqueness to get a unique folder when multiple
  * projects share the same year+month (no day) → same day 1, seconds incremented.
+ *
+ * @param year - The year component (e.g., 2026)
+ * @param month - The month component (1-12)
+ * @param day - Optional day component (1-31), defaults to 1
+ * @returns Object with folder base, prefix, and createdAt date
  */
 export function dateToFolderAndCreatedAt(
   year: number,
@@ -67,7 +86,9 @@ export function dateToFolderAndCreatedAt(
 }
 
 /**
- * Format a Date as a Cloudinary folder path (projects/YYYYMMDD-HHmmss).
+ * Format a Date as a Cloudinary folder path.
+ * @param date - The date to format
+ * @returns Folder path in format `projects/YYYYMMDD-HHmmss`
  */
 export function dateToFolderString(date: Date): string {
   const y = date.getFullYear();
@@ -80,8 +101,9 @@ export function dateToFolderString(date: Date): string {
 }
 
 /**
- * Parse a Cloudinary folder path (e.g. projects/20250201-000001) to a Date.
- * Returns null if the format is invalid.
+ * Parse a Cloudinary folder path to a Date.
+ * @param folder - Folder path (e.g., `projects/20250201-000001`)
+ * @returns Parsed Date object, or `null` if the format is invalid
  */
 export function parseFolderToCreatedAt(folder: string | null | undefined): Date | null {
   if (!folder || typeof folder !== "string") return null;
@@ -100,12 +122,14 @@ export function parseFolderToCreatedAt(folder: string | null | undefined): Date 
 }
 
 /**
- * Generate signed upload parameters for client-side uploads. The client uses
- * these with the file in a POST to Cloudinary; the signature proves the upload
- * was authorized by your server. Safe to call per batch of uploads (same params
- * can be used for multiple files within a short period).
+ * Generate signed upload parameters for client-side uploads.
+ * The client uses these with the file in a POST to Cloudinary.
+ * The signature proves the upload was authorized by your server.
+ * Safe to call per batch of uploads (same params can be used for multiple files within a short period).
  *
- * @param folder - Optional Cloudinary folder path. Defaults to "projects".
+ * @param folder - Optional Cloudinary folder path. Defaults to "projects"
+ * @returns Signed upload parameters for client-side use
+ * @throws Error if Cloudinary is not configured
  */
 export function getSignedUploadParams(folder?: string): SignedUploadParams {
   const config = cloudinary.config();
@@ -129,25 +153,27 @@ export function getSignedUploadParams(folder?: string): SignedUploadParams {
  * Normalized result of an image upload to Cloudinary.
  */
 export interface UploadResult {
+  /** Cloudinary public ID for the uploaded asset */
   publicId: string;
+  /** HTTPS URL to access the image */
   secureUrl: string;
+  /** Image width in pixels */
   width: number;
+  /** Image height in pixels */
   height: number;
+  /** Image format (e.g., "jpg", "png", "webp") */
   format: string;
 }
 
+/**
+ * Options for image upload operations.
+ */
 type UploadOptions = {
-  /**
-   * Optional Cloudinary transformation options applied during upload.
-   */
+  /** Optional Cloudinary transformation options applied during upload */
   transformation?: object;
-  /**
-   * Optional explicit public ID for the asset; otherwise Cloudinary generates one.
-   */
+  /** Optional explicit public ID for the asset; otherwise Cloudinary generates one */
   publicId?: string;
-  /**
-   * Optional Cloudinary folder name; defaults to `"projects"`.
-   */
+  /** Optional Cloudinary folder name; defaults to "projects" */
   folder?: string;
 };
 
@@ -156,9 +182,13 @@ const DEFAULT_UPLOAD_FOLDER = DEFAULT_PROJECTS_FOLDER;
 
 /**
  * Upload an image to Cloudinary.
- *
  * Accepts either a base64/data-URI or URL (`string`) or a `Buffer` and returns
- * normalized upload metadata. Throws on upload failure.
+ * normalized upload metadata.
+ *
+ * @param file - Image data as string (URL or base64) or Buffer
+ * @param options - Upload options (transformation, publicId, folder)
+ * @returns Upload result with public ID, URL, and dimensions
+ * @throws Error on upload failure
  */
 export async function uploadImage(
   file: string | Buffer,
@@ -224,8 +254,9 @@ export async function uploadImage(
 
 /**
  * Delete an image from Cloudinary by its public ID.
- *
  * No-op when `publicId` is falsy.
+ *
+ * @param publicId - The Cloudinary public ID of the image to delete
  */
 export async function deleteImage(publicId: string): Promise<void> {
   if (!publicId) return;
@@ -236,10 +267,11 @@ export async function deleteImage(publicId: string): Promise<void> {
 }
 
 /**
- * Delete an empty folder from Cloudinary. The folder must not contain any assets.
+ * Delete an empty folder from Cloudinary.
+ * The folder must not contain any assets.
  * No-op when `folder` is falsy or equals the root projects folder ("projects").
  *
- * @param folder - Full folder path (e.g. "projects/20260213-120000")
+ * @param folder - Full folder path (e.g., `projects/20260213-120000`)
  */
 export async function deleteFolder(folder: string | null | undefined): Promise<void> {
   if (!folder || !folder.trim()) return;
@@ -251,9 +283,12 @@ export async function deleteFolder(folder: string | null | undefined): Promise<v
 
 /**
  * Replace a project's image in Cloudinary.
+ * Best-effort deletes the existing image (if any) and uploads a new one.
  *
- * Best-effort deletes the existing image (if any) and uploads a new one, returning
- * the new upload metadata.
+ * @param oldPublicId - Public ID of the existing image to delete (can be null)
+ * @param fileBuffer - Buffer containing the new image data
+ * @param options - Upload options (transformation, folder)
+ * @returns Upload result for the new image
  */
 export async function replaceProjectImage(
   oldPublicId: string | null | undefined,
@@ -275,11 +310,13 @@ export async function replaceProjectImage(
   return uploaded;
 }
 
-/** Matches `cloudinary://API_KEY:API_SECRET@CLOUD_NAME`. */
+/** Regex pattern matching valid CLOUDINARY_URL format */
 const CLOUDINARY_URL_REGEX = /^cloudinary:\/\/[^:]+:[^@]+@[a-zA-Z0-9_-]+$/;
 
 /**
  * Ensure `CLOUDINARY_URL` is set and has a valid format before generating URLs.
+ * @throws Error if CLOUDINARY_URL is missing or has invalid format
+ * @internal
  */
 function assertCloudinaryUrlConfigured(): void {
   const url = process.env.CLOUDINARY_URL;
@@ -293,24 +330,31 @@ function assertCloudinaryUrlConfigured(): void {
   }
 }
 
+/**
+ * Options for generating optimized Cloudinary image URLs.
+ */
 type OptimizeOptions = {
-  /** Optional target width in pixels. */
+  /** Target width in pixels */
   width?: number;
-  /** Optional target height in pixels. */
+  /** Target height in pixels */
   height?: number;
-  /** Optional Cloudinary crop mode (e.g. `"fill"`, `"fit"`). */
+  /** Cloudinary crop mode (e.g., "fill", "fit") */
   crop?: string;
-  /** Optional quality setting (e.g. `"auto"` or a numeric value). */
+  /** Quality setting (e.g., "auto" or a numeric value) */
   quality?: string | number;
-  /** Optional output format (e.g. `"webp"`, `"jpg"`). */
+  /** Output format (e.g., "webp", "jpg") */
   format?: string;
 };
 
 /**
  * Generate a secure, optimized Cloudinary URL for a given public ID.
- *
  * Applies basic transformation options (width, height, crop, quality, format)
  * and always returns an HTTPS URL.
+ *
+ * @param publicId - The Cloudinary public ID of the image
+ * @param options - Optimization options (dimensions, crop, quality, format)
+ * @returns Optimized HTTPS URL for the image
+ * @throws Error if Cloudinary is not configured
  */
 export function getOptimizedImageUrl(
   publicId: string,

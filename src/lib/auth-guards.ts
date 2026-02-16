@@ -1,11 +1,16 @@
+/**
+ * @module lib/auth-guards
+ * @description Authentication guard utilities for protecting API routes.
+ * Provides functions to verify admin status and return appropriate HTTP responses.
+ */
 import { NextResponse } from "next/server";
 import type { Session } from "next-auth";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 
 /**
- * Result type returned by admin guard helpers. When `ok` is `false`, `response`
- * contains the HTTP response that should be returned from the route handler.
+ * Result type returned by admin guard helpers.
+ * When `ok` is `false`, `response` contains the HTTP response that should be returned from the route handler.
  */
 export type RequireAdminResult =
   | {
@@ -21,14 +26,19 @@ export type RequireAdminResult =
 
 /**
  * Result type used by `verifyAdmin`.
+ * Returns either success with user info or failure with HTTP response.
  */
 export type VerifyAdminResult =
   | { ok: true; user: { isAdmin: true } }
   | { ok: false; response: NextResponse };
 
 /**
- * Single source of truth: get session, then check admin via one DB lookup by user id (or email).
+ * Get session and check admin status via database lookup.
+ * Single source of truth for admin verification - uses one DB lookup by user id (or email).
  * No fallbacks — intended for a single OAuth provider (Google) and authorized-admin-only access.
+ *
+ * @returns Object containing session (or null) and admin status boolean
+ * @internal
  */
 async function getSessionAndAdminUser(): Promise<{
   session: Session | null;
@@ -62,7 +72,18 @@ async function getSessionAndAdminUser(): Promise<{
 
 /**
  * Guard for collection endpoints (e.g. POST /api/projects).
- * Returns 401 if no session, 403 if not admin, else { ok: true, session }.
+ * Verifies the user is authenticated and has admin privileges.
+ *
+ * @returns `RequireAdminResult` - 401 if no session, 403 if not admin, else `{ ok: true, session }`
+ *
+ * @example
+ * ```typescript
+ * const adminResult = await requireAdmin();
+ * if (!adminResult.ok) {
+ *   return adminResult.response;
+ * }
+ * // User is authenticated admin, proceed...
+ * ```
  */
 export async function requireAdmin(): Promise<RequireAdminResult> {
   const { session, isAdmin } = await getSessionAndAdminUser();
@@ -88,7 +109,18 @@ export async function requireAdmin(): Promise<RequireAdminResult> {
 
 /**
  * Guard for item endpoints (e.g. PATCH/DELETE /api/projects/[id]).
- * Same logic as requireAdmin; returns a minimal result shape.
+ * Same logic as requireAdmin but returns a minimal result shape.
+ *
+ * @returns `VerifyAdminResult` - 401 if no session, 403 if not admin, else `{ ok: true, user }`
+ *
+ * @example
+ * ```typescript
+ * const adminResult = await verifyAdmin();
+ * if (!adminResult.ok) {
+ *   return adminResult.response;
+ * }
+ * // User is authenticated admin, proceed...
+ * ```
  */
 export async function verifyAdmin(): Promise<VerifyAdminResult> {
   const { session, isAdmin } = await getSessionAndAdminUser();
