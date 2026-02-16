@@ -8,7 +8,7 @@
  */
 
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, within, waitFor } from "@testing-library/react";
 import Footer from "@/components/Footer";
 
 vi.mock("next-themes", async () => (await import("../../tests/mocks/next-themes")).default);
@@ -16,12 +16,15 @@ vi.mock("next/image", async () => ({ default: (await import("../../tests/mocks/n
 
 describe("Footer", () => {
 	/** Ensures the footer landmark and logo (by alt) are present. */
-	it("renders the footer", () => {
+	it("renders the footer", async () => {
 		render(<Footer />);
 		const footer = screen.getByTestId("footer");
 		expect(footer).toBeInTheDocument();
 		expect(screen.getByRole("contentinfo")).toBe(footer);
-		expect(within(footer).getByRole("img", { name: "Shoreline Woodworks" })).toBeInTheDocument();
+		// Wait for the image to appear after the useEffect sets mounted to true
+		await waitFor(() => {
+			expect(within(footer).getByRole("img", { name: "Shoreline Woodworks" })).toBeInTheDocument();
+		});
 	});
 
 	/**

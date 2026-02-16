@@ -12,6 +12,7 @@ export default function MockNextImage({
 	className,
 }: ComponentProps<"img"> & { alt: string }) {
 	return (
+		// eslint-disable-next-line @next/next/no-img-element -- This is a test mock, using <img> is intentional
 		<img alt={alt} src={src} width={width} height={height} className={className} />
 	);
 }
