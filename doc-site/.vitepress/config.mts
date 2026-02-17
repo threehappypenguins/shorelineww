@@ -16,8 +16,8 @@ export default defineConfig({
   themeConfig: {
     nav: [
       { text: 'Home', link: '/' },
-      { text: 'Guides', link: '/setup-dev-environment.html' },
-      { text: 'Project', link: '/requirements.html' },
+      { text: 'Guides', link: '/guides/setup-dev-environment.html' },
+      { text: 'Project', link: '/guides/requirements.html' },
       { text: 'Frontend Docs', link: '/frontend-docs.html' },
       { text: 'Backend Docs', link: '/api-docs.html' }
     ],
@@ -26,26 +26,26 @@ export default defineConfig({
       {
         text: 'Getting Started',
         items: [
-          { text: 'Setup Dev Environment', link: '/setup-dev-environment.html' },
-          { text: 'Managing Dev Environment', link: '/managing-dev-environment.html' },
-          { text: 'Git Workflow', link: '/git-workflow.html' },
-          { text: 'GitHub Notifications', link: '/setup-github-notifications.html' }
+          { text: 'Setup Dev Environment', link: '/guides/setup-dev-environment.html' },
+          { text: 'Managing Dev Environment', link: '/guides/managing-dev-environment.html' },
+          { text: 'Git Workflow', link: '/guides/git-workflow.html' },
+          { text: 'GitHub Notifications', link: '/guides/setup-github-notifications.html' }
         ]
       },
       {
         text: 'Development & Testing',
         items: [
-          { text: 'Testing Strategy', link: '/testing-strategy.html' },
-          { text: 'Testing', link: '/testing.html' },
-          { text: 'TypeDoc Guide', link: '/typedoc-guide.html' }
+          { text: 'Testing Strategy', link: '/guides/testing-strategy.html' },
+          { text: 'Testing', link: '/guides/testing.html' },
+          { text: 'TypeDoc Guide', link: '/guides/typedoc-guide.html' }
         ]
       },
       {
         text: 'Project Documentation',
         items: [
-          { text: 'Requirements', link: '/requirements.html' },
-          { text: 'Architecture', link: '/architechture.html' },
-          { text: 'Deployment', link: '/deployment.html' }
+          { text: 'Requirements', link: '/guides/requirements.html' },
+          { text: 'Architecture', link: '/guides/architecture.html' },
+          { text: 'Deployment', link: '/guides/deployment.html' }
         ]
       },
       {
