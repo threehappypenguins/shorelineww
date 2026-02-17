@@ -16,7 +16,6 @@ cypress/videos
 cypress/screenshots
 
 # documentation
-docs/generated
 doc-site/.vitepress/cache
 doc-site/.vitepress/dist
 doc-site/public

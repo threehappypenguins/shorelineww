@@ -14,8 +14,12 @@
     "cy:open": "cypress open",
     "cy:run": "cypress run",
     "docs": "pnpm run docs:api && pnpm run docs:frontend",
-    "docs:api": "typedoc --options typedoc.json -out doc-site/public/api --entryPoints src/app/api --exclude \"**/*.test.tsx\"",
-    "docs:frontend": "typedoc --options typedoc.json --exclude \"**/src/app/api/**\" --exclude \"**/*.test.tsx\"  --out \"doc-site/public/frontend\""
+    "docs:api": "typedoc --options typedoc.json -out doc-site/public/api --entryPoints src/app/api",
+    "docs:frontend": "typedoc --options typedoc.json --exclude \"**/src/app/api/**\" --out \"doc-site/public/frontend\"",
+    "docs:dev": "pnpm run copy:guides && pnpm run docs && vitepress dev doc-site",
+    "docs:build": "pnpm run copy:guides && pnpm run docs && vitepress build doc-site",
+    "docs:preview": "vitepress preview doc-site",
+    "copy:guides": "node -e \"const fs=require('fs');const path=require('path');const src='docs';const dest='doc-site/guides';fs.rmSync(dest,{recursive:true,force:true});fs.mkdirSync(dest,{recursive:true});fs.readdirSync(src).forEach(f=>fs.cpSync(path.join(src,f),path.join(dest,f),{recursive:true}));\""
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.1",
@@ -49,6 +53,7 @@
     "tsx": "^4.21.0",
     "typedoc": "^0.28.17",
     "typescript": "^5",
+    "vitepress": "2.0.0-alpha.16",
     "vitest": "^4.0.18"
   },
   "pnpm": {

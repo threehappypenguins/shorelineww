@@ -46,18 +46,26 @@ jobs:
           path: ~/.local/share/pnpm/store
           key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
           restore-keys: |
-            ${{ runner.os }}-pnpm-
-      
+            ${{ runner.os }}-pnp m -
+        
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Generate TypeDoc documentation
-        run: pnpm typedoc
+      - name: Update VitePress base configuration
+        run: |
+          sed -i "s|base:.*|base: '/${{ github.event.repository.name }}/',|g" doc-site/.vitepress/config.mts
+
+
+      - name: Display Config File
+        run: cat doc-site/.vitepress/config.mts
+
+      - name: Build VitePress site
+        run: pnpm run docs:build
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: 'docs/generated'
+          path: 'doc-site/.vitepress/dist'
 
   deploy:
     if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
