@@ -2,7 +2,6 @@
  * @module app/page
  * @description Home page component displaying the landing hero section.
  */
-import LandingHeader from "@/app/components/LandingHeader";
 import RecentProjects from '@/components/RecentProjects';
 
 /**

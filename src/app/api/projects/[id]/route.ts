@@ -126,18 +126,27 @@ async function resolveFolderForDate(
 
 /**
  * Find the displayOrder index where a project with the given createdAt should sit.
- * When listed by displayOrder, newest first (0 = newest).
- * @param createdAt - The creation date to find position for
+ * Projects are listed by date (newest first), then by displayOrder within the same day.
+ * Only projects on the same calendar day are considered.
+ * @param createdAt - The creation date to find position for (target day)
  * @param excludeProjectId - Project ID to exclude from the calculation
- * @returns The displayOrder index where the project should be inserted
+ * @returns The displayOrder index where the project should be inserted within that day
  */
 async function getDisplayOrderInsertIndex(
   createdAt: Date,
   excludeProjectId: string,
 ): Promise<number> {
+  const startOfDay = new Date(createdAt);
+  startOfDay.setHours(0, 0, 0, 0);
+  const endOfDay = new Date(startOfDay);
+  endOfDay.setDate(endOfDay.getDate() + 1);
+
   const projects = await prisma.project.findMany({
-    where: { id: { not: excludeProjectId } },
-    orderBy: { displayOrder: "asc" },
+    where: {
+      id: { not: excludeProjectId },
+      createdAt: { gte: startOfDay, lt: endOfDay },
+    },
+    orderBy: [{ createdAt: "desc" }, { displayOrder: "asc" }],
     select: { id: true, displayOrder: true, createdAt: true },
   });
   const insertIndex = projects.filter((p) => p.createdAt > createdAt).length;
@@ -289,21 +298,6 @@ export async function PATCH(req: Request, { params }: RouteParams) {
       }
     }
 
-    let displayOrderInsertIndex: number | null = null;
-    if (resolvedDate) {
-      displayOrderInsertIndex = await getDisplayOrderInsertIndex(
-        resolvedDate.createdAt,
-        id,
-      );
-      await prisma.project.updateMany({
-        where: {
-          displayOrder: { gte: displayOrderInsertIndex },
-          id: { not: id },
-        },
-        data: { displayOrder: { increment: 1 } },
-      });
-    }
-
     if (!title || typeof title !== "string") {
       return NextResponse.json(
         { error: "Title is required" },
@@ -316,6 +310,26 @@ export async function PATCH(req: Request, { params }: RouteParams) {
         { error: "Title is required" },
         { status: 400 },
       );
+    }
+
+    let displayOrderInsertIndex: number | null = null;
+    if (resolvedDate) {
+      displayOrderInsertIndex = await getDisplayOrderInsertIndex(
+        resolvedDate.createdAt,
+        id,
+      );
+      const startOfDay = new Date(resolvedDate.createdAt);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(startOfDay);
+      endOfDay.setDate(endOfDay.getDate() + 1);
+      await prisma.project.updateMany({
+        where: {
+          id: { not: id },
+          createdAt: { gte: startOfDay, lt: endOfDay },
+          displayOrder: { gte: displayOrderInsertIndex },
+        },
+        data: { displayOrder: { increment: 1 } },
+      });
     }
 
     const imageFiles = imageEntries.filter((entry): entry is File => {
