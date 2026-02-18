@@ -1,16 +1,6 @@
-/**
- * @module app/contact/page
- * @description Contact page combining form and contact information.
- */
 import ContactForm from "./contactForm";
 import ContactInformation from "./contactInformation";
 
-/**
- * Contact page component.
- * Displays a two-column layout with contact information and a message form.
- *
- * @returns The contact page JSX element
- */
 export default function ContactPage() {
   return (
     <div className="pt-16">
