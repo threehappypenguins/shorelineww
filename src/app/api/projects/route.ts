@@ -294,7 +294,10 @@ async function handlePostJson(req: Request) {
       dateIsMonthOnly = body?.dateIsMonthOnly === true || body?.dateIsMonthOnly === "true";
     }
 
-    if (createdAt) {
+    // Only reject "date in the future" when the user explicitly chose a date. When createdAt
+    // was derived from the upload folder, that folder was generated from upload time and can
+    // be "tomorrow" in UTC (e.g. user in Atlantic late evening = next day UTC).
+    if (createdAt && hasExplicitDate) {
       const todayStart = new Date();
       todayStart.setHours(0, 0, 0, 0);
       const chosenStart = new Date(createdAt);
