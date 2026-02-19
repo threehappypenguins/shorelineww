@@ -134,9 +134,31 @@ export default function ProjectCard({
             type="button"
             onClick={() => onDelete(project.id)}
             disabled={deletingId === project.id}
-            className="flex-1 bg-destructive text-destructive-foreground py-2 px-4 rounded-lg font-medium hover:bg-destructive/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+            className="flex-1 flex items-center justify-center gap-2 bg-destructive text-destructive-foreground py-2 px-4 rounded-lg font-medium hover:bg-destructive/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
           >
-            {deletingId === project.id ? 'Deleting…' : 'Delete'}
+            {deletingId === project.id ? (
+              <>
+                <svg
+                  className="size-4 shrink-0 animate-spin"
+                  viewBox="0 0 24 24"
+                  aria-hidden
+                >
+                  <circle
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeDasharray="40 23"
+                    strokeLinecap="round"
+                  />
+                </svg>
+                Deleting…
+              </>
+            ) : (
+              'Delete'
+            )}
           </button>
         </div>
       )}
