@@ -13,7 +13,7 @@ When a user **starts** creating a project and chooses images, those images are u
 The app provides an admin-only API that finds and deletes orphaned project folders:
 
 - **Endpoint:** `GET /api/cloudinary-cleanup`
-- **Auth:** Admin session required (same as other admin APIs).
+- **Auth:** Admin session **or** `Authorization: Bearer <CRON_SECRET>` (for Vercel Cron and other schedulers).
 - **Behavior:**
   - Loads all project `cloudinaryFolder` values from the database.
   - Lists image resources under the `projects/` prefix in Cloudinary.
@@ -28,10 +28,22 @@ The 1-hour delay avoids deleting folders that are currently in use (e.g. the use
    `https://your-domain.com/api/cloudinary-cleanup`  
    in the browser. The response shows how many folders were deleted.
 
-2. **Cron / scheduler:** Call `GET /api/cloudinary-cleanup` on a schedule (e.g. hourly). You must send the request with credentials that satisfy the admin check (e.g. a secure token or cookie, depending on how you implement auth for cron). See your deployment docs for how to set up cron (e.g. Vercel Cron Jobs, or an external service).
+2. **Vercel Cron (recommended):** The project includes a `vercel.json` cron that runs the cleanup daily at 6:00 AM UTC. Set a `CRON_SECRET` environment variable (at least 16 characters) in your Vercel project settings. Vercel sends this as `Authorization: Bearer <CRON_SECRET>`; the API accepts it instead of an admin session. Deploy to production for cron to activate.
+
+3. **External scheduler:** Call `GET /api/cloudinary-cleanup` on a schedule with `Authorization: Bearer <CRON_SECRET>` in the request headers.
 
 ## Implementation details
 
 - Cleanup logic lives in `src/lib/cloudinary.ts` (`findOrphanedProjectFolders`, `cleanupOrphanedProjectFolders`).
 - The API route is `src/app/api/cloudinary-cleanup/route.ts`.
+- Vercel Cron config is in `vercel.json` (daily at 6:00 AM UTC).
 - Folder age is determined by the oldest `created_at` among assets in that folder; the threshold is configurable via `ORPHANED_FOLDER_AGE_MS` (default 1 hour).
+
+**Set Secret**
+- Example: in terminal, run `openssl rand -hex 32`
+
+**Test Locally**
+- Make sure that .env has `CRON_SECRET` and in terminal (with dev server running, and sub `<CRON_SECRET>` with actual one):
+  ```bash
+  curl -H "Authorization: Bearer <CRON_SECRET>" http://localhost:3000/api/cloudinary-cleanup
+  ```

@@ -10,6 +10,7 @@ import {
   DEFAULT_PROJECTS_FOLDER,
   dateToFolderAndCreatedAt,
   generateProjectFolder,
+  getNextFolderForDatePrefix,
   getSignedUploadParams,
 } from "@/lib/cloudinary";
 
@@ -38,35 +39,6 @@ function folderFromCreatedAt(createdAt: Date): string {
   const min = String(d.getMinutes()).padStart(2, "0");
   const s = String(d.getSeconds()).padStart(2, "0");
   return `${DEFAULT_PROJECTS_FOLDER}/${y}${m}${day}-${h}${min}${s}`;
-}
-
-/**
- * Parse HHmmss suffix to seconds since midnight.
- * @param suffix - Time suffix in HHmmss format (6 digits)
- * @returns Seconds since midnight, or 0 if invalid format
- */
-function suffixToSeconds(suffix: string): number {
-  if (!/^\d{6}$/.test(suffix)) return 0;
-  const h = parseInt(suffix.slice(0, 2), 10);
-  const m = parseInt(suffix.slice(2, 4), 10);
-  const s = parseInt(suffix.slice(4, 6), 10);
-  return h * 3600 + m * 60 + s;
-}
-
-/**
- * Convert seconds since midnight to HHmmss format.
- * @param seconds - Number of seconds since midnight
- * @returns Time string in HHmmss format (6 digits, zero-padded)
- */
-function secondsToSuffix(seconds: number): string {
-  const s = Math.max(0, Math.floor(seconds)) % 60;
-  const m = Math.floor(seconds / 60) % 60;
-  const h = Math.floor(seconds / 3600);
-  return [
-    String(h).padStart(2, "0"),
-    String(m).padStart(2, "0"),
-    String(s).padStart(2, "0"),
-  ].join("");
 }
 
 /**
@@ -154,19 +126,39 @@ export async function GET(req: NextRequest) {
         );
       }
       const { prefix } = dateToFolderAndCreatedAt(year, month, day);
-      const existing = await prisma.project.findMany({
-        where: { cloudinaryFolder: { startsWith: prefix } },
-        select: { cloudinaryFolder: true },
-      });
-      let maxSeconds = 0;
-      for (const p of existing) {
-        const suffix = p.cloudinaryFolder?.slice(-6) ?? "";
-        maxSeconds = Math.max(maxSeconds, suffixToSeconds(suffix));
-      }
-      const nextSeconds = maxSeconds + 1;
-      folder = `${prefix}${secondsToSuffix(nextSeconds)}`;
+      // Ensure uniqueness: concurrent requests with same date could otherwise get the same folder.
+      let folderCandidate: string;
+      do {
+        const existing = await prisma.project.findMany({
+          where: { cloudinaryFolder: { startsWith: prefix } },
+          select: { cloudinaryFolder: true },
+        });
+        const existingPaths = existing
+          .map((p) => p.cloudinaryFolder)
+          .filter((f): f is string => typeof f === "string" && f.length > 0);
+        folderCandidate = getNextFolderForDatePrefix(prefix, existingPaths);
+        const collision = await prisma.project.findFirst({
+          where: { cloudinaryFolder: folderCandidate },
+          select: { id: true },
+        });
+        if (!collision) break;
+      } while (true);
+      folder = folderCandidate;
     } else {
       folder = generateProjectFolder();
+      // Ensure uniqueness: same-second requests would otherwise get the same folder.
+      let candidate = folder;
+      let suffix = 2;
+      while (true) {
+        const existing = await prisma.project.findFirst({
+          where: { cloudinaryFolder: candidate },
+          select: { id: true },
+        });
+        if (!existing) break;
+        candidate = `${folder}-${suffix}`;
+        suffix += 1;
+      }
+      folder = candidate;
     }
 
     const params = getSignedUploadParams(folder);

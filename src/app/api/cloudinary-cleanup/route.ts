@@ -7,6 +7,9 @@
  * are not linked to any project in the database and deletes them (if their
  * oldest asset is older than 1 hour). Run periodically via cron or on-demand.
  *
+ * Auth: Either (1) admin session cookie, or (2) Authorization: Bearer <CRON_SECRET>
+ * for Vercel Cron and other external schedulers.
+ *
  * @see docs/cloudinary-cleanup.md
  */
 import { NextResponse } from "next/server";
@@ -19,18 +22,31 @@ import {
 
 export const runtime = "nodejs";
 
+/** Check if request is authorized via Vercel Cron secret (Bearer token). */
+function isCronAuthorized(request: Request): boolean {
+  const secret = process.env.CRON_SECRET;
+  if (!secret || secret.length < 16) return false;
+  const auth = request.headers.get("authorization");
+  if (!auth || !auth.startsWith("Bearer ")) return false;
+  const token = auth.slice(7).trim();
+  return token.length > 0 && token === secret;
+}
+
 /**
  * GET /api/cloudinary-cleanup
  *
- * Admin only. Deletes Cloudinary project folders that are not in the database
- * and whose oldest asset is older than 1 hour. Returns { deleted: string[] }.
- * Safe to call from a cron job (e.g. hourly) if the cron sends an admin auth
- * cookie or a secure token.
+ * Admin only (or valid CRON_SECRET Bearer token). Deletes Cloudinary project
+ * folders that are not in the database and whose oldest asset is older than
+ * 1 hour. Returns { deleted: string[] }.
+ * Safe to call from Vercel Cron; set CRON_SECRET in Vercel env vars.
  */
-export async function GET() {
-  const adminResult = await requireAdmin();
-  if (!adminResult.ok) {
-    return adminResult.response;
+export async function GET(request: Request) {
+  const cronOk = isCronAuthorized(request);
+  if (!cronOk) {
+    const adminResult = await requireAdmin();
+    if (!adminResult.ok) {
+      return adminResult.response;
+    }
   }
 
   try {

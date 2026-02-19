@@ -101,6 +101,52 @@ export function dateToFolderString(date: Date): string {
 }
 
 /**
+ * Parse HHmmss suffix (6 digits) to seconds since midnight.
+ * Used to compute the next available folder in a date prefix.
+ */
+export function suffixToSeconds(suffix: string): number {
+  if (!/^\d{6}$/.test(suffix)) return 0;
+  const h = parseInt(suffix.slice(0, 2), 10);
+  const m = parseInt(suffix.slice(2, 4), 10);
+  const s = parseInt(suffix.slice(4, 6), 10);
+  return h * 3600 + m * 60 + s;
+}
+
+/**
+ * Convert seconds since midnight to HHmmss format (6 digits).
+ */
+export function secondsToSuffix(seconds: number): string {
+  const s = Math.max(0, Math.floor(seconds)) % 60;
+  const m = Math.floor(seconds / 60) % 60;
+  const h = Math.floor(seconds / 3600);
+  return [
+    String(h).padStart(2, "0"),
+    String(m).padStart(2, "0"),
+    String(s).padStart(2, "0"),
+  ].join("");
+}
+
+/**
+ * Compute the next available folder path for a date prefix given existing folder paths.
+ * Used when moving uploads to a date-based folder (e.g. user picked date after uploading).
+ * @param prefix - Prefix from dateToFolderAndCreatedAt (e.g. "projects/20260101-")
+ * @param existingFolderPaths - Full folder paths that start with the prefix
+ * @returns Next folder path (e.g. "projects/20260101-000001")
+ */
+export function getNextFolderForDatePrefix(
+  prefix: string,
+  existingFolderPaths: string[],
+): string {
+  let maxSeconds = 0;
+  for (const path of existingFolderPaths) {
+    if (!path?.startsWith(prefix)) continue;
+    const suffix = path.slice(prefix.length).slice(0, 6);
+    maxSeconds = Math.max(maxSeconds, suffixToSeconds(suffix));
+  }
+  return `${prefix}${secondsToSuffix(maxSeconds + 1)}`;
+}
+
+/**
  * Parse a Cloudinary folder path to a Date.
  * @param folder - Folder path (e.g., `projects/20250201-000001`)
  * @returns Parsed Date object, or `null` if the format is invalid
@@ -253,6 +299,23 @@ export async function uploadImage(
 }
 
 /**
+ * Rename (move) an image in Cloudinary to a new public ID (e.g. new folder path).
+ * Use when moving project images to a date-based folder after the user picks a date.
+ *
+ * @param fromPublicId - Current public ID (e.g. projects/20260218-174333/abc)
+ * @param toPublicId - New public ID (e.g. projects/20260101-000001/abc)
+ */
+export async function renameImage(
+  fromPublicId: string,
+  toPublicId: string,
+): Promise<void> {
+  if (!fromPublicId || !toPublicId || fromPublicId === toPublicId) return;
+  await cloudinary.uploader.rename(fromPublicId, toPublicId, {
+    resource_type: "image",
+  });
+}
+
+/**
  * Delete an image from Cloudinary by its public ID.
  * No-op when `publicId` is falsy.
  *
@@ -267,9 +330,36 @@ export async function deleteImage(publicId: string): Promise<void> {
 }
 
 /**
+ * Set the asset_folder of a resource (dynamic folder mode only).
+ * Use after renaming so the Media Library shows the asset in the new folder.
+ * No-op if the API doesn't support it (e.g. fixed folder mode).
+ *
+ * @param publicId - The resource's public_id (after rename)
+ * @param assetFolder - The folder path for the Console UI (e.g. projects/20260101-000001)
+ */
+export async function setAssetFolder(
+  publicId: string,
+  assetFolder: string,
+): Promise<void> {
+  if (!publicId || !assetFolder?.trim()) return;
+  try {
+    await cloudinary.api.update(publicId, {
+      resource_type: "image",
+      asset_folder: assetFolder.trim(),
+    });
+  } catch {
+    // Ignore: fixed folder mode or API may not support asset_folder
+  }
+}
+
+/**
  * Delete an empty folder from Cloudinary.
- * The folder must not contain any assets.
+ * The folder must not contain any assets (or call deleteResourcesByPrefix first).
  * No-op when `folder` is falsy or equals the root projects folder ("projects").
+ *
+ * In dynamic folder mode, folders may not exist as deletable paths (404) or may
+ * report "not empty" after assets were moved by public_id. This function treats
+ * 404 and 400 "Folder is not empty" as non-fatal and resolves without throwing.
  *
  * @param folder - Full folder path (e.g., `projects/20260213-120000`)
  */
@@ -278,7 +368,18 @@ export async function deleteFolder(folder: string | null | undefined): Promise<v
   const trimmed = folder.trim();
   if (trimmed === DEFAULT_PROJECTS_FOLDER) return;
 
-  await cloudinary.api.delete_folder(trimmed);
+  try {
+    await cloudinary.api.delete_folder(trimmed);
+  } catch (err: unknown) {
+    const errObj = err && typeof err === "object" ? err as Record<string, unknown> : null;
+    const inner = errObj?.error && typeof errObj.error === "object" ? errObj.error as Record<string, unknown> : errObj;
+    const msg = typeof inner?.message === "string" ? inner.message : String(err);
+    const code = typeof inner?.http_code === "number" ? inner.http_code : undefined;
+    if (code === 404 || code === 400 || /can't find folder|folder is not empty/i.test(msg)) {
+      return;
+    }
+    throw err;
+  }
 }
 
 /**
