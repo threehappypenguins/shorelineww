@@ -513,11 +513,11 @@ export default function LandingHero({
         </div>
       ) : (
         <>
-          <div className="relative z-10 w-full max-w-7xl mx-auto px-4 pt-24 sm:pt-28 pb-20 sm:pb-24 text-left">
+          <div className="relative z-10 isolate w-full max-w-7xl mx-auto px-4 pt-24 sm:pt-28 pb-20 sm:pb-24 text-left">
             <h1
-              className={`text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-4 sm:mb-6 max-w-2xl ${
+              className={`text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-4 sm:mb-6 max-w-2xl [text-rendering:geometricPrecision] ${
                 hasImage
-                  ? 'text-white drop-shadow-lg'
+                  ? 'text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.45),0_0_1px_rgba(0,0,0,0.4)]'
                   : 'text-foreground'
               }`}
             >
@@ -525,7 +525,9 @@ export default function LandingHero({
             </h1>
             <p
               className={`text-base sm:text-lg md:text-xl mb-8 sm:mb-12 max-w-2xl ${
-                hasImage ? 'text-white/90 drop-shadow' : 'text-muted-foreground'
+                hasImage
+                  ? 'text-white/90 [text-shadow:0_1px_1px_rgba(0,0,0,0.4),0_0_1px_rgba(0,0,0,0.3)]'
+                  : 'text-muted-foreground'
               }`}
             >
               {displayTagline}
