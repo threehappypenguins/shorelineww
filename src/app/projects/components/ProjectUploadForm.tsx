@@ -251,24 +251,28 @@ export default function ProjectUploadForm({ onSuccess, editProject }: ProjectUpl
     });
   }
 
-  /** Get signed upload config. For create: optional year/month/day. For edit: projectId. */
-  async function getUploadConfig(): Promise<{ cloudName: string; apiKey: string; timestamp: number; signature: string; folder: string }> {
+  /** Get signed upload config. For create: optional year/month/day, or existingFolder to reuse (add more images). For edit: projectId. */
+  async function getUploadConfig(existingFolder?: string | null): Promise<{ cloudName: string; apiKey: string; timestamp: number; signature: string; folder: string }> {
     const configUrl = new URL('/api/cloudinary-config', window.location.origin);
     if (editProject) {
       configUrl.searchParams.set('projectId', editProject.id);
     } else {
-      const hasDate =
-        projectDateYear.trim() !== '' &&
-        projectDateMonth.trim() !== '' &&
-        parseInt(projectDateYear, 10) >= 1970 &&
-        parseInt(projectDateMonth, 10) >= 1 &&
-        parseInt(projectDateMonth, 10) <= 12;
-      if (hasDate) {
-        configUrl.searchParams.set('year', projectDateYear.trim());
-        configUrl.searchParams.set('month', projectDateMonth.trim());
-        if (projectDateDay.trim() !== '') {
-          const day = parseInt(projectDateDay.trim(), 10);
-          if (day >= 1 && day <= 31) configUrl.searchParams.set('day', projectDateDay.trim());
+      if (existingFolder?.trim()) {
+        configUrl.searchParams.set('folder', existingFolder.trim());
+      } else {
+        const hasDate =
+          projectDateYear.trim() !== '' &&
+          projectDateMonth.trim() !== '' &&
+          parseInt(projectDateYear, 10) >= 1970 &&
+          parseInt(projectDateMonth, 10) >= 1 &&
+          parseInt(projectDateMonth, 10) <= 12;
+        if (hasDate) {
+          configUrl.searchParams.set('year', projectDateYear.trim());
+          configUrl.searchParams.set('month', projectDateMonth.trim());
+          if (projectDateDay.trim() !== '') {
+            const day = parseInt(projectDateDay.trim(), 10);
+            if (day >= 1 && day <= 31) configUrl.searchParams.set('day', projectDateDay.trim());
+          }
         }
       }
     }
@@ -307,7 +311,7 @@ export default function ProjectUploadForm({ onSuccess, editProject }: ProjectUpl
       setUploadProgress(totalBytes ? Math.round((loaded / totalBytes) * 100) : 100);
     };
     try {
-      const config = await getUploadConfig();
+      const config = await getUploadConfig(cloudinaryFolder);
       if (!editProject) setCloudinaryFolder((f) => f || config.folder);
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
@@ -536,10 +540,10 @@ export default function ProjectUploadForm({ onSuccess, editProject }: ProjectUpl
             uploadedImages: newImages.map((n) => ({ secureUrl: n.secureUrl, publicId: n.publicId })),
             cloudinaryFolder: cloudinaryFolder ?? undefined,
             ...(hasDate && {
-              projectDateYear: projectDateYear.trim(),
-              projectDateMonth: projectDateMonth.trim(),
-              projectDateDay: projectDateDay.trim(),
-              dateIsMonthOnly: projectDateDay.trim() === '',
+              projectDateYear: projectDateYear?.trim() ?? '',
+              projectDateMonth: projectDateMonth?.trim() ?? '',
+              projectDateDay: projectDateDay?.trim() ?? '',
+              dateIsMonthOnly: (projectDateDay?.trim() ?? '') === '',
             }),
           }),
         });
@@ -575,6 +579,12 @@ export default function ProjectUploadForm({ onSuccess, editProject }: ProjectUpl
       return;
     }
 
+    // Create path but no newImages (e.g. state was reset); ensure we don't leave loading stuck
+    if (!editProject) {
+      setLoading(false);
+      setUploadProgress(0);
+      setError('Please add at least one image.');
+    }
   };
 
   if (!isExpanded) {

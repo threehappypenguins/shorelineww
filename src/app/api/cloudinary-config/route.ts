@@ -55,6 +55,9 @@ function folderFromCreatedAt(createdAt: Date): string {
  * @example Query params:
  * - `projectId` (optional): When editing an existing project, pass its ID so images
  *   are uploaded to that project's Cloudinary folder. Omit for new projects.
+ * - `folder` (optional): Reuse an existing folder path (e.g. from a prior config response).
+ *   Use when adding more images in the same create session so all uploads go to one folder.
+ *   Must match projects/YYYYMMDD-HHmmss or projects/YYYYMMDD-HHmmss-N.
  * - `year`, `month` (required if date is used): Project date; folder = projects/YYYYMMDD-HHmmss
  * - `day` (optional): Day of month (default 1). Omit for "first of month".
  */
@@ -67,12 +70,24 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const purpose = searchParams.get("purpose");
+    const existingFolderParam = searchParams.get("folder");
     const projectId = searchParams.get("projectId");
     const yearParam = searchParams.get("year");
     const monthParam = searchParams.get("month");
     const dayParam = searchParams.get("day");
 
     let folder: string;
+
+    // Reuse existing folder (e.g. "Add more images" in create flow so all uploads go to same folder)
+    if (
+      existingFolderParam != null &&
+      existingFolderParam.trim() !== "" &&
+      /^projects\/\d{8}-\d{6}(-\d+)?$/.test(existingFolderParam.trim())
+    ) {
+      folder = existingFolderParam.trim();
+      const params = getSignedUploadParams(folder);
+      return NextResponse.json(params);
+    }
 
     if (purpose === "landing") {
       folder = "landing";
