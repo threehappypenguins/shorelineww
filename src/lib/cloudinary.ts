@@ -55,15 +55,15 @@ export interface ProjectDateFolderResult {
   folderBase: string;
   /** Prefix to match existing folders for same day, e.g. `projects/20250201-` */
   prefix: string;
-  /** Date at midnight (00:00:00) for the chosen day (day defaults to 1) */
+  /** Date at noon UTC for the chosen day so the calendar date displays correctly in all timezones */
   createdAt: Date;
 }
 
 /**
  * Convert year/month/day to Cloudinary folder base and createdAt.
- * Day defaults to 1 (first of month). Time is midnight (00:00:00).
- * Used with resolveProjectFolderUniqueness to get a unique folder when multiple
- * projects share the same year+month (no day) → same day 1, seconds incremented.
+ * Day defaults to 1 (first of month). createdAt is stored as noon UTC so the
+ * calendar date displays correctly in all timezones (midnight UTC would show
+ * as the previous day in timezones behind UTC).
  *
  * @param year - The year component (e.g., 2026)
  * @param month - The month component (1-12)
@@ -76,10 +76,10 @@ export function dateToFolderAndCreatedAt(
   day?: number,
 ): ProjectDateFolderResult {
   const d = day ?? 1;
-  const date = new Date(year, month - 1, d, 0, 0, 0, 0);
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const dayStr = String(date.getDate()).padStart(2, "0");
+  const date = new Date(Date.UTC(year, month - 1, d, 12, 0, 0, 0));
+  const y = String(year).padStart(4, "0");
+  const m = String(month).padStart(2, "0");
+  const dayStr = String(d).padStart(2, "0");
   const prefix = `${DEFAULT_PROJECTS_FOLDER}/${y}${m}${dayStr}-`;
   const folderBase = `${prefix}000000`;
   return { folderBase, prefix, createdAt: date };
@@ -148,6 +148,8 @@ export function getNextFolderForDatePrefix(
 
 /**
  * Parse a Cloudinary folder path to a Date.
+ * Uses noon UTC for the calendar date so display is correct in all timezones;
+ * adds the folder's HHmmss suffix as seconds for ordering.
  * @param folder - Folder path (e.g., `projects/20250201-000001`)
  * @returns Parsed Date object, or `null` if the format is invalid
  */
@@ -156,14 +158,13 @@ export function parseFolderToCreatedAt(folder: string | null | undefined): Date 
   const match = folder.trim().match(/^projects\/(\d{4})(\d{2})(\d{2})-(\d{2})(\d{2})(\d{2})$/);
   if (!match) return null;
   const [, y, m, d, h, min, s] = match;
-  const date = new Date(
-    parseInt(y!, 10),
-    parseInt(m!, 10) - 1,
-    parseInt(d!, 10),
-    parseInt(h!, 10),
-    parseInt(min!, 10),
-    parseInt(s!, 10),
-  );
+  const year = parseInt(y!, 10);
+  const month = parseInt(m!, 10) - 1;
+  const day = parseInt(d!, 10);
+  const suffix = `${h}${min}${s}`;
+  const secs = suffixToSeconds(suffix);
+  const noonUtc = Date.UTC(year, month, day, 12, 0, 0, 0);
+  const date = new Date(noonUtc + secs * 1000);
   return Number.isNaN(date.getTime()) ? null : date;
 }
 

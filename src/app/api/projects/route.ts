@@ -287,7 +287,7 @@ async function handlePostJson(req: Request) {
     let dateIsMonthOnly: boolean | undefined;
 
     if (hasExplicitDate && validDay) {
-      createdAt = new Date(yearNum, monthNum - 1, dayNum, 0, 0, 0, 0);
+      createdAt = new Date(Date.UTC(yearNum, monthNum - 1, dayNum, 12, 0, 0, 0));
       dateIsMonthOnly = body?.dateIsMonthOnly === true || body?.dateIsMonthOnly === "true";
     } else if (cloudinaryFolder != null) {
       createdAt = parseFolderToCreatedAt(cloudinaryFolder) ?? undefined;
