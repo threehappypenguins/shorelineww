@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import type { ProjectApiResponse } from '@/types/project';
 import ProjectCard from '@/app/projects/components/ProjectCard';
+import { useProjectModals } from '@/app/projects/hooks/useProjectModals';
 
 function ArrowRightIcon() {
   return (
@@ -29,6 +30,7 @@ export default function RecentProjects() {
   const [projects, setProjects] = useState<ProjectApiResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { onPhotoClick, onGalleryClick, modals } = useProjectModals(projects);
 
   useEffect(() => {
     async function fetchRecent() {
@@ -79,6 +81,8 @@ export default function RecentProjects() {
                 project={project}
                 priority={index < 3}
                 isAuthenticated={false}
+                onPhotoClick={onPhotoClick}
+                onGalleryClick={onGalleryClick}
               />
             ))}
           </div>
@@ -106,6 +110,8 @@ export default function RecentProjects() {
           </Link>
         </div>
       )}
+
+      {modals}
 
       <div className="bg-card border border-border rounded-xl shadow-md p-8 text-center">
         <h3 className="text-2xl font-bold text-foreground mb-3">Ready to Start Your Project?</h3>
