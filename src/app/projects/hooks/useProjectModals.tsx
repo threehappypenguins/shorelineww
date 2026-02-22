@@ -1,10 +1,25 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import type { ProjectApiResponse } from '@/types/project';
 import type { ModalHistoryState } from '../constants';
 import GalleryModal from '../components/GalleryModal';
 import PhotoModal from '../components/PhotoModal';
+
+/**
+ * Renders children into document.body so fixed-position modals cover the viewport
+ * (avoids being clipped by ancestor transform/contain on e.g. landing page).
+ */
+function ProjectModalsPortal({ children }: { children: React.ReactNode }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setMounted(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+  if (!mounted || typeof document === 'undefined') return null;
+  return createPortal(children, document.body);
+}
 
 /**
  * Shared hook for project gallery and photo modal state and history.
@@ -142,7 +157,7 @@ export function useProjectModals(projects: ProjectApiResponse[]) {
   );
 
   const modals = (
-    <>
+    <ProjectModalsPortal>
       {galleryModalProject && (
         <GalleryModal
           project={galleryModalProject}
@@ -164,7 +179,7 @@ export function useProjectModals(projects: ProjectApiResponse[]) {
           onClose={closePhotoModal}
         />
       )}
-    </>
+    </ProjectModalsPortal>
   );
 
   return {
