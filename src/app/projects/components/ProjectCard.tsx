@@ -100,7 +100,9 @@ export default function ProjectCard({
           className="absolute inset-x-0 bottom-0 w-full text-left bg-gradient-to-t from-black/85 via-black/60 to-transparent pt-12 px-3 pb-3 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset touch-manipulation"
           aria-label={`Open gallery: ${project.title}`}
         >
-          <h4 className="font-bold text-lg text-white drop-shadow-sm">{project.title}</h4>
+          <h4 className="font-bold text-lg text-white [text-rendering:geometricPrecision] [text-shadow:0_1px_2px_rgba(0,0,0,0.45),0_0_1px_rgba(0,0,0,0.4)]">
+            {project.title}
+          </h4>
           <div className="min-h-[1.5rem] flex flex-wrap gap-1.5 mt-1.5 mb-1">
             {project.tags?.map((tag) => (
               <span
@@ -111,16 +113,14 @@ export default function ProjectCard({
               </span>
             ))}
           </div>
-          <p className="text-xs text-white/90">
+          <p className="text-xs text-white/90 [text-rendering:geometricPrecision] [text-shadow:0_1px_1px_rgba(0,0,0,0.4),0_0_1px_rgba(0,0,0,0.3)]">
             {formatProjectDate(project.createdAt, project.dateIsMonthOnly)}
+          </p>
+          <p className="text-sm text-white/90 [text-rendering:geometricPrecision] [text-shadow:0_1px_1px_rgba(0,0,0,0.4),0_0_1px_rgba(0,0,0,0.3)] line-clamp-1 mt-1 min-h-[1.25rem]">
+            {project.description ?? '\u00A0'}
           </p>
         </button>
       </div>
-      {project.description && (
-        <div className="p-4 pt-2">
-          <p className="text-sm text-foreground/80 line-clamp-3">{project.description}</p>
-        </div>
-      )}
       {isAuthenticated && onEdit && onDelete && (
         <div className="flex gap-2 p-4 pt-2 mt-auto border-t border-border">
           <button

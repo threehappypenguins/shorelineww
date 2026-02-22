@@ -4,6 +4,7 @@
  */
 'use client';
 
+import { useState, useRef, useLayoutEffect, useEffect } from 'react';
 import Image from 'next/image';
 import type { ProjectApiResponse } from '@/types/project';
 
@@ -51,6 +52,36 @@ type Props = {
  */
 export default function GalleryModal({ project, onClose, onOpenPhoto }: Props) {
   const imageUrls = getImageUrls(project);
+  const [descriptionExpanded, setDescriptionExpanded] = useState(false);
+  const [showReadMore, setShowReadMore] = useState(false);
+  const descriptionRef = useRef<HTMLParagraphElement | null>(null);
+
+  function checkClamped() {
+    const el = descriptionRef.current;
+    if (!el) return;
+    setShowReadMore(el.scrollHeight > el.clientHeight);
+  }
+
+  useLayoutEffect(() => {
+    const id = requestAnimationFrame(() => {
+      if (!project.description || descriptionExpanded) {
+        setShowReadMore(false);
+        return;
+      }
+      checkClamped();
+    });
+    return () => cancelAnimationFrame(id);
+  }, [project.description, descriptionExpanded]);
+
+  useEffect(() => {
+    if (!project.description || descriptionExpanded) return;
+    const el = descriptionRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(checkClamped);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [project.description, descriptionExpanded]);
+
   if (imageUrls.length === 0) return null;
 
   return (
@@ -78,9 +109,47 @@ export default function GalleryModal({ project, onClose, onOpenPhoto }: Props) {
         </button>
       </div>
       <div
-        className="flex-1 overflow-auto p-4 flex flex-wrap items-start gap-3 sm:gap-4"
+        className="flex-1 overflow-auto p-4 flex flex-col gap-4"
         onClick={(e) => e.stopPropagation()}
       >
+        {project.description && (
+          <div className="shrink-0">
+            <p
+              ref={descriptionRef}
+              className={`text-sm text-muted-foreground whitespace-pre-wrap ${descriptionExpanded ? '' : 'line-clamp-3 sm:line-clamp-5'}`}
+            >
+              {project.description}
+            </p>
+            {(showReadMore || descriptionExpanded) && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setDescriptionExpanded((v) => !v);
+                }}
+                className="mt-1.5 inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded"
+                aria-expanded={descriptionExpanded ? 'true' : 'false'}
+              >
+                {descriptionExpanded ? (
+                  <>
+                    Read less
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                    </svg>
+                  </>
+                ) : (
+                  <>
+                    Read more
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </>
+                )}
+              </button>
+            )}
+          </div>
+        )}
+        <div className="flex flex-wrap items-start gap-3 sm:gap-4">
         {imageUrls.map((url, i) => (
           <div
             key={`${url}-${i}`}
@@ -104,6 +173,7 @@ export default function GalleryModal({ project, onClose, onOpenPhoto }: Props) {
             </div>
           </div>
         ))}
+        </div>
       </div>
     </div>
   );
