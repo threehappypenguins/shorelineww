@@ -26,13 +26,12 @@ import {
 } from '@dnd-kit/sortable';
 import type { ProjectApiResponse } from '@/types/project';
 
-import { PAGE_SIZE, TAG_NONE, type ModalHistoryState } from './constants';
+import { PAGE_SIZE, TAG_NONE } from './constants';
 import ProjectCard from './components/ProjectCard';
 import SortableProjectCard from './components/SortableProjectCard';
 import ProjectsFilters from './components/ProjectsFilters';
 import ProjectsReorderBar from './components/ProjectsReorderBar';
-import GalleryModal from './components/GalleryModal';
-import PhotoModal from './components/PhotoModal';
+import { useProjectModals } from './hooks/useProjectModals';
 
 /**
  * Projects gallery page component.
@@ -64,14 +63,8 @@ export default function ProjectsPage() {
   const [dateKeyOfDragged, setDateKeyOfDragged] = useState<string | null>(null);
   const [editingProject, setEditingProject] = useState<ProjectApiResponse | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [photoModalProject, setPhotoModalProject] = useState<ProjectApiResponse | null>(null);
-  const [photoModalIndex, setPhotoModalIndex] = useState(0);
-  const [photoModalDragOffset, setPhotoModalDragOffset] = useState(0);
-  const [photoModalIsDragging, setPhotoModalIsDragging] = useState(false);
-  const carouselContainerRef = useRef<HTMLDivElement | null>(null);
-  const [galleryModalProject, setGalleryModalProject] = useState<ProjectApiResponse | null>(null);
-  const projectsRef = useRef<ProjectApiResponse[]>([]);
-  projectsRef.current = projects;
+
+  const { onPhotoClick, onGalleryClick, modals } = useProjectModals(projects);
 
   const maxDisplayCountRef = useRef(PAGE_SIZE);
   maxDisplayCountRef.current = Math.max(maxDisplayCountRef.current, projects.length);
@@ -155,95 +148,6 @@ export default function ProjectsPage() {
     fetchTagNames();
     fetchYears();
   }, [fetchTagNames, fetchYears]);
-
-  useEffect(() => {
-    if (photoModalProject || galleryModalProject) {
-      const prev = document.body.style.overflow;
-      document.body.style.overflow = 'hidden';
-      return () => {
-        document.body.style.overflow = prev;
-      };
-    }
-  }, [photoModalProject, galleryModalProject]);
-
-  useEffect(() => {
-    const onPopState = (e: PopStateEvent) => {
-      const state = e.state as ModalHistoryState | null | undefined;
-      const list = projectsRef.current;
-
-      if (!state || !state.modal) {
-        setGalleryModalProject(null);
-        setPhotoModalProject(null);
-        return;
-      }
-
-      if (state.modal === 'gallery') {
-        const project = list.find((p) => p.id === state.projectId) ?? null;
-        setGalleryModalProject(project);
-        setPhotoModalProject(null);
-        return;
-      }
-
-      if (state.modal === 'photo') {
-        const project = list.find((p) => p.id === state.projectId) ?? null;
-        setPhotoModalProject(project);
-        setPhotoModalIndex(state.photoIndex ?? 0);
-        setPhotoModalDragOffset(0);
-        setPhotoModalIsDragging(false);
-        setGalleryModalProject(null);
-      }
-    };
-    window.addEventListener('popstate', onPopState);
-    return () => window.removeEventListener('popstate', onPopState);
-  }, []);
-
-  const closePhotoModal = useCallback(() => {
-    window.history.back();
-  }, []);
-
-  const closeGalleryModal = useCallback(() => {
-    window.history.back();
-  }, []);
-
-  const openGalleryModal = useCallback((project: ProjectApiResponse) => {
-    const url = window.location.pathname + window.location.search + window.location.hash;
-    window.history.pushState({ modal: 'gallery', projectId: project.id } satisfies ModalHistoryState, '', url);
-    setGalleryModalProject(project);
-    setPhotoModalProject(null);
-  }, []);
-
-  const openPhotoModal = useCallback((project: ProjectApiResponse, index: number) => {
-    const url = window.location.pathname + window.location.search + window.location.hash;
-    window.history.pushState({ modal: 'photo', projectId: project.id, photoIndex: index } satisfies ModalHistoryState, '', url);
-    setPhotoModalProject(project);
-    setPhotoModalIndex(index);
-    setPhotoModalDragOffset(0);
-    setPhotoModalIsDragging(false);
-    setGalleryModalProject(null);
-  }, []);
-
-  useEffect(() => {
-    if (!galleryModalProject) return;
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') closeGalleryModal();
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [galleryModalProject, closeGalleryModal]);
-
-  useEffect(() => {
-    if (!photoModalProject) return;
-    const imageUrls =
-      photoModalProject.images?.length ? photoModalProject.images.map((i) => i.imageUrl) : photoModalProject.imageUrl ? [photoModalProject.imageUrl] : [];
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') closePhotoModal();
-      if (imageUrls.length <= 1) return;
-      if (e.key === 'ArrowLeft') setPhotoModalIndex((i) => (i - 1 + imageUrls.length) % imageUrls.length);
-      if (e.key === 'ArrowRight') setPhotoModalIndex((i) => (i + 1) % imageUrls.length);
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [photoModalProject, closePhotoModal]);
 
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
@@ -368,13 +272,6 @@ export default function ProjectsPage() {
     await fetchProjects({ limit: Math.max(PAGE_SIZE, count) });
   }, [projects.length, fetchProjects]);
 
-  const photoModalImageUrls =
-    photoModalProject?.images?.length
-      ? photoModalProject.images.map((i) => i.imageUrl)
-      : photoModalProject?.imageUrl
-        ? [photoModalProject.imageUrl]
-        : [];
-
   return (
     <div className="pt-16 min-h-screen">
       <div className="max-w-7xl mx-auto px-4 py-12">
@@ -463,8 +360,8 @@ export default function ProjectsPage() {
                   isAuthenticated={isAuthenticated}
                   onEdit={handleEdit}
                   onDelete={handleDelete}
-                  onPhotoClick={(project) => openPhotoModal(project, 0)}
-                  onGalleryClick={openGalleryModal}
+                  onPhotoClick={onPhotoClick}
+                  onGalleryClick={onGalleryClick}
                   deletingId={deletingId}
                 />
               ))}
@@ -521,28 +418,7 @@ export default function ProjectsPage() {
           </>
         )}
 
-        {galleryModalProject && (
-          <GalleryModal
-            project={galleryModalProject}
-            onClose={closeGalleryModal}
-            onOpenPhoto={(index) => openPhotoModal(galleryModalProject, index)}
-          />
-        )}
-
-        {photoModalProject && photoModalImageUrls.length > 0 && (
-          <PhotoModal
-            project={photoModalProject}
-            imageUrls={photoModalImageUrls}
-            index={photoModalIndex}
-            onIndexChange={setPhotoModalIndex}
-            dragOffset={photoModalDragOffset}
-            onDragOffsetChange={setPhotoModalDragOffset}
-            isDragging={photoModalIsDragging}
-            onIsDraggingChange={setPhotoModalIsDragging}
-            containerRef={carouselContainerRef}
-            onClose={closePhotoModal}
-          />
-        )}
+        {modals}
       </div>
     </div>
   );
