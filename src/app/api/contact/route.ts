@@ -27,7 +27,6 @@ export async function POST(request: NextRequest) {
   try {
     const missingKey = missing("TURNSTILE_SECRET_KEY", "MAILGUN_API_KEY", "MAILGUN_DOMAIN", "MAILGUN_FROM", "MAILGUN_TO");
     if (missingKey) {
-      console.error("[contact] Missing env var:", missingKey);
       return NextResponse.json(
         { success: false, message: "Contact form is not configured." },
         { status: 500 }
@@ -123,8 +122,6 @@ export async function POST(request: NextRequest) {
   });
 
   if (!mailRes.ok) {
-    const errText = await mailRes.text();
-    console.error("[contact] Mailgun error:", mailRes.status, errText);
     return NextResponse.json(
       { success: false, message: "Failed to send message. Please try again later." },
       { status: 500 }
@@ -132,8 +129,7 @@ export async function POST(request: NextRequest) {
   }
 
   return NextResponse.json({ success: true, message: "Message sent." });
-  } catch (err) {
-    console.error("[contact] Unhandled error:", err);
+  } catch {
     return NextResponse.json(
       { success: false, message: "Something went wrong. Please try again later." },
       { status: 500 }
